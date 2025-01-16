@@ -41,7 +41,7 @@ def max_cover_sampling(graph, k):
           nodes.remove(neighbor)
     return list(selected_nodes), len(nodes)
 
-def calculate_similarity_threshold(data, num_samples, coverage, cap=None, epsilon=None, labels=None, sims=[0,1000]):
+def calculate_similarity_threshold(data, num_samples, coverage, cap=None, epsilon=None, labels=None, sims=[500,1000]):
     total_num = len(data)
     if epsilon is None:
         # There is a chance that we never get close enough to "coverage" to terminate
