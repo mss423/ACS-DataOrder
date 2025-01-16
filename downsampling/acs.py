@@ -65,7 +65,7 @@ def calculate_similarity_threshold(data, num_samples, coverage, cap=None, epsilo
     # cannot achieve the coverage with sim_lower, then return the samples.
     sim = (sim_upper + sim_lower) / 2
     # node_graph = build_graph(data, sim / 1000, labels=labels
-    cap = (2 * total_num * coverage) / num_samples
+    cap = None #(2 * total_num * coverage) / num_samples
     while abs(current_coverage - coverage) > epsilon and sim_upper - sim_lower > 1:
         if count >= max_run:
             print(f"Reached max number of iterations ({max_run}). Breaking...")
