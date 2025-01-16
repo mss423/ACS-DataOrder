@@ -4,7 +4,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 from vertex_embed import get_embeddings_task
 
 # labels maps i to its label.
-def build_graph(cos_sim, sim_thresh=0.0, labels=None):
+def build_graph(cos_sim, sim_thresh=0.0, max_degree=None, labels=None):
     G = nx.Graph()
     for i in range(len(cos_sim)):
         G.add_node(i)
@@ -13,7 +13,9 @@ def build_graph(cos_sim, sim_thresh=0.0, labels=None):
         for j, similarity in neighbors:
             if j == i:
                 continue
-            if similarity >= sim_thresh:
+            if max_degree and G.degree(i) >= max_degree:
+                break  # Exit the inner loop if max_degree is reached
+            if similarity >= sim_thresh:# and labels and labels[i]==labels[j]:
                 G.add_edge(i, j, weight=similarity)
         # add self-loop, doesn't count toward max_degree
         G.add_edge(i, i, weight=1)
