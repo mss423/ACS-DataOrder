@@ -30,9 +30,12 @@ def max_cover_sampling(graph, k):
     for _ in range(k):
       if not nodes:
         break
-      max_cover_node = max([node for node in nodes if node not in covered_nodes], key=lambda n: len(set(graph.neighbors(n))))
+      max_cover_node = max(
+            [node for node in nodes if node not in covered_nodes],
+            key=lambda n: len([neighbor for neighbor in graph.neighbors(n) if neighbor not in covered_nodes])
+        )
       selected_nodes.add(max_cover_node)
-      # covered_nodes.add(max_cover_node)
+      covered_nodes.add(max_cover_node)
       covered_nodes.update(graph.neighbors(max_cover_node))
 
       # Remove neighbors of selected node
