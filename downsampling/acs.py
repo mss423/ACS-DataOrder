@@ -98,7 +98,7 @@ def max_k_cover(data, Ks):
     for K in Ks:
         cap = (2 * 0.9 * len(data)) / K
         G = build_graph(cos_sim, sim_thresh=0.7, max_degree=cap)
-        selected_samples[K] = max_cover_sampling(G, K)
+        selected_samples[K], _ = max_cover_sampling(G, K)
     return selected_samples
 
 
