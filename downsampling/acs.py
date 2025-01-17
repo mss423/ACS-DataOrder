@@ -87,9 +87,19 @@ def calculate_similarity_threshold(data, num_samples, coverage, cap=None, epsilo
 def acs_sample(data, Ks):
     coverage = 0.9 # Coverage fixed at 0.9
     cos_sim     = cosine_similarity(data)
-
     selected_samples = {}
     for K in Ks:
         _, _, selected_samples[K] = calculate_similarity_threshold(cos_sim, K, coverage)
     return selected_samples
+
+def max_k_cover(data, Ks):
+    cos_sim = cosine_similarity(data)
+    selected_samples = {}
+    for K in Ks:
+        cap = (2 * 0.9 * len(data)) / K
+        G = build_graph(cos_sim, sim_thresh=0.7, max_degree=cap)
+        selected_samples[K] = max_cover_sampling(G, K)
+    return selected_samples
+
+
 
