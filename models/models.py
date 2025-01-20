@@ -145,7 +145,8 @@ class LeastSquaresModel:
             pred = test_x.T @ ws
             preds.append(pred)
 
-        return torch.stack(preds, dim=0)
+        print(preds)
+        return torch.stack(preds, dim=1)
 
 class AveragingModel:
     def __init__(self):
