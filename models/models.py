@@ -139,13 +139,13 @@ class LeastSquaresModel:
             test_x = xs[:, i : i + 1]
 
             ws, _, _, _ = torch.linalg.lstsq(
-                train_xs, train_ys.unsqueeze(2), driver=self.driver
+                train_xs, train_ys, driver=self.driver
             )
 
             pred = test_x @ ws
-            preds.append(pred[:, 0, 0])
+            preds.append(pred)
 
-        return torch.stack(preds, dim=1)
+        return torch.Tensor(preds) # torch.stack(preds, dim=1)
 
 class AveragingModel:
     def __init__(self):

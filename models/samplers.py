@@ -15,11 +15,11 @@ bce_loss = torch.nn.BCELoss()
 
 def get_gaussian_samples(n_dims, n_points, seed=None, scale=None, bias=None):
     if seed is None:
-        xs = torch.randn(n_points, n_dims)
+        xs = torch.randn(n_dims, n_points)
     else:
         generator = torch.Generator()
         generator.manual_seed(seed)
-        xs = torch.randn(n_points, n_dims)
+        xs = torch.randn(n_dims, n_points)
 
     if scale is not None:
         xs = xs @ scale
@@ -69,7 +69,7 @@ class LinearRegression(Task):
 
     def evaluate(self, xs):
         w = self.w.to(xs.device)
-        ys = self.scale * (xs @ w)
+        ys = self.scale * (w @ xs)
         return ys
 
     @staticmethod
