@@ -69,7 +69,7 @@ class LinearRegression(Task):
 
     def evaluate(self, xs):
         w = self.w.to(xs.device)
-        ys = self.scale * (xs @ w)[:, :, 0]
+        ys = self.scale * (xs @ w)
         return ys
 
     @staticmethod
