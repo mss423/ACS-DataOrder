@@ -27,13 +27,6 @@ def get_gaussian_samples(n_dims, n_points, seed=None, scale=None, bias=None):
         xs += bias
     return xs
 
-def get_random_function(task, n_dims):
-    if task == "linear":
-
-    else:
-        rprint("Unknown task")
-        raise NotImplementedError
-
 class Task:
     def __init__(self, n_dims, pool_dict=None, seeds=None):
         self.n_dims = n_dims
