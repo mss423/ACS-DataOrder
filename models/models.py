@@ -7,8 +7,6 @@ import warnings
 from sklearn import tree
 import xgboost as xgb
 
-from base_models import NeuralNetwork
-
 
 def get_relevant_baselines(task_name):
     task_to_baselines = {
