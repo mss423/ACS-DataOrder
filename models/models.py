@@ -112,7 +112,7 @@ class NNModel:
                 pred.append((w * y).sum() / w.sum())
             preds.append(torch.stack(pred))
 
-        return torch.stack(preds, dim=)
+        return torch.stack(preds, dim=1)
 
 
 # xs and ys should be on cpu for this method. Otherwise the output maybe off in case when train_xs is not full rank due to the implementation of torch.linalg.lstsq.
@@ -146,7 +146,7 @@ class LeastSquaresModel:
             preds.append(pred.squeeze())
 
         print(preds)
-        return torch.stack(preds, dim=1)
+        return torch.stack(preds, dim=0)
 
 class AveragingModel:
     def __init__(self):
