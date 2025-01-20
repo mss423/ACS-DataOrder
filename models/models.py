@@ -124,16 +124,16 @@ class LeastSquaresModel:
     def __call__(self, xs, ys, inds=None):
         xs, ys = xs.cpu(), ys.cpu()
         if inds is None:
-            inds = range(ys.shape[1])
+            inds = range(ys.shape[0])
         else:
-            if max(inds) >= ys.shape[1] or min(inds) < 0:
+            if max(inds) >= ys.shape[0] or min(inds) < 0:
                 raise ValueError("inds contain indices where xs and ys are not defined")
 
         preds = []
 
         for i in inds:
             if i == 0:
-                preds.append(torch.zeros_like(ys[:, 0]))  # predict zero for first point
+                preds.append(torch.zeros_like(ys[0, :]))  # predict zero for first point
                 continue
             train_xs, train_ys = xs[:, :i], ys[:, :i]
             test_x = xs[:, i : i + 1]
