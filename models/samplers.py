@@ -21,9 +21,9 @@ def get_gaussian_samples(n_dims, n_points, seed=None, scale=None, bias=None):
         generator.manual_seed(seed)
         xs = torch.randn(n_points, n_dims)
 
-    if self.scale is not None:
+    if scale is not None:
         xs = xs @ scale
-    if self.bias is not None:
+    if bias is not None:
         xs += bias
     return xs
 
@@ -52,7 +52,7 @@ class Task:
 class LinearRegression(Task):
     def __init__(self, n_dims, pool_dict=None, seed=None, scale=1):
         """scale: a constant by which to scale the randomly sampled weights."""
-        super(LinearRegression, self).__init__(n_dims, pool_dict, seeds)
+        super(LinearRegression, self).__init__(n_dims, pool_dict, seed)
         self.scale = scale
 
         if pool_dict is None and seeds is None:
