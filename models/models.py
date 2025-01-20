@@ -124,9 +124,9 @@ class LeastSquaresModel:
     def __call__(self, xs, ys, inds=None):
         xs, ys = xs.cpu(), ys.cpu()
         if inds is None:
-            inds = range(ys.shape[0])
+            inds = range(ys.shape[1])
         else:
-            if max(inds) >= ys.shape[0] or min(inds) < 0:
+            if max(inds) >= ys.shape[1] or min(inds) < 0:
                 raise ValueError("inds contain indices where xs and ys are not defined")
 
         preds = []
