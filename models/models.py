@@ -133,12 +133,11 @@ class LeastSquaresModel:
 
         for i in inds:
             if i == 0:
-                preds.append(torch.zeros_like(ys[0, :]))  # predict zero for first point
+                preds.append(torch.zeros_like(ys[:, 0]))  # predict zero for first point
                 continue
             train_xs, train_ys = xs[:, :i], ys[:,:i]
             test_x = xs[:, i : i + 1]
-            print(train_xs.shape)
-            print(train_ys.shape)
+
             ws, _, _, _ = torch.linalg.lstsq(
                 train_xs.T, train_ys.T, driver=self.driver
             )
@@ -146,7 +145,8 @@ class LeastSquaresModel:
             pred = test_x.T @ ws
             preds.append(pred)
 
-        return torch.stack(preds, dim=1)
+        print(preds)
+        return torch.Tensor(preds) # torch.stack(preds, dim=1)
 
 class AveragingModel:
     def __init__(self):
