@@ -143,7 +143,7 @@ class LeastSquaresModel:
             )
 
             pred = test_x.T @ ws
-            preds.append(pred)
+            preds.append(pred.squeeze())
 
         print(preds)
         return torch.stack(preds, dim=1)
