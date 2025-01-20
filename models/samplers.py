@@ -28,10 +28,10 @@ def get_gaussian_samples(n_dims, n_points, seed=None, scale=None, bias=None):
     return xs
 
 class Task:
-    def __init__(self, n_dims, pool_dict=None, seeds=None):
+    def __init__(self, n_dims, pool_dict=None, seed=None):
         self.n_dims = n_dims
         self.pool_dict = pool_dict
-        self.seeds = seeds
+        self.seed = seed
         assert pool_dict is None or seeds is None
 
     def evaluate(self, xs):
@@ -55,7 +55,7 @@ class LinearRegression(Task):
         super(LinearRegression, self).__init__(n_dims, pool_dict, seed)
         self.scale = scale
 
-        if pool_dict is None and seeds is None:
+        if pool_dict is None and seed is None:
             self.w = torch.randn(self.n_dims, 1)
         elif seed is not None:
             self.w = torch.zeros(self.n_dims, 1)
