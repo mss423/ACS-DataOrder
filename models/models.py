@@ -135,10 +135,9 @@ class LeastSquaresModel:
             if i == 0:
                 preds.append(torch.zeros_like(ys[0, :]))  # predict zero for first point
                 continue
-            train_xs, train_ys = xs[:, :i], ys[:i]
+            train_xs, train_ys = xs[:, :i], ys[:,:i]
             test_x = xs[:, i : i + 1]
-            print(train_xs.shape)
-            print(train_ys.shape)
+
             ws, _, _, _ = torch.linalg.lstsq(
                 train_xs, train_ys, driver=self.driver
             )
