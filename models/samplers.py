@@ -83,3 +83,46 @@ class LinearRegression(Task):
     @staticmethod
     def get_training_metric():
         return mean_squared_error
+
+class SparseLinearRegression(LinearRegression):
+    def __init__(
+        self,
+        n_dims,
+        pool_dict=None,
+        seeds=None,
+        scale=1,
+        sparsity=3,
+        valid_coords=None,
+    ):
+        """scale: a constant by which to scale the randomly sampled weights."""
+        super(SparseLinearRegression, self).__init__(
+            n_dims, pool_dict, seeds, scale
+        )
+        self.sparsity = sparsity
+        if valid_coords is None:
+            valid_coords = n_dims
+        assert valid_coords <= n_dims
+
+        for i, w_b in enumerate(self.w):
+            mask = torch.ones(n_dims).bool()
+            if seeds is None:
+                perm = torch.randperm(valid_coords)
+            else:
+                generator = torch.Generator()
+                generator.manual_seed(seeds[i])
+                perm = torch.randperm(valid_coords, generator=generator)
+            mask[perm[:sparsity]] = False
+            w_b[mask] = 0
+
+    def evaluate(self, xs):
+        w = self.w.to(xs.device)
+        ys = self.scale * (xs.T @ w)
+        return ys
+
+    @staticmethod
+    def get_metric():
+        return squared_error
+
+    @staticmethod
+    def get_training_metric():
+        return mean_squared_error
