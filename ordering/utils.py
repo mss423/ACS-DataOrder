@@ -29,7 +29,7 @@ def calculate_similarity_threshold(data, num_samples, coverage, cap=None, epsilo
 
 	if coverage < num_samples / total_num:
 		node_graph = build_graph(data, 1)
-		samples, rem_nodes = max_cover_sampling(node_graph, num_samples)
+		samples, rem_nodes = max_cover(node_graph, num_samples)
 		return 1, node_graph, samples
 	# using an integer for sim threhsold avoids lots of floating drama!
 	sim_upper = sims[1]
@@ -50,7 +50,7 @@ def calculate_similarity_threshold(data, num_samples, coverage, cap=None, epsilo
 		count += 1
 
 		node_graph = build_graph(data, sim / 1000, max_degree=cap, labels=labels)
-		samples, rem_nodes = max_cover_sampling(node_graph, num_samples)
+		samples, rem_nodes = max_cover(node_graph, num_samples)
 		current_coverage = (total_num - rem_nodes) / total_num
 
 		if current_coverage < coverage:
@@ -82,6 +82,35 @@ def max_cover(graph, k):
 				nodes.remove(neighbor)
 	return list(selected_nodes), len(nodes)
 
+def max_cover_cluster(graph, k):
+	nodes = list(graph.nodes())
+	selected_nodes = set()
+	covered_nodes = set()
+	cluster_assignments = {}
+
+	for i in range(k):
+		if not nodes:
+			break
+		max_cover_node = max([node for node in nodes if node not in covered_nodes],
+			key=lambda n: len([neighbor for neighbor in graph.neighbors(n) if neighbor not in covered_nodes])
+			)
+		selected_nodes.add(max_cover_node)
+		covered_nodes.add(max_cover_node)
+		# covered_nodes.update(graph.neighbors(max_cover_node))
+
+		# Assign clusters
+		cluster_assignment[max_cover_node] = i
+		for neighbor in graph.neighbors(max_cover_node):
+			if neighbor not in covered_nodes:
+				cluster_assignments[neighbor] = i
+				covered_nodes.add(neighbor)
+
+		# Remove neighbors of selected node
+		for neighbor in graph.neighbors(max_cover_node):
+			if neighbor in nodes:
+				nodes.remove(neighbor)
+	return list(selected_nodes), len(nodes), cluster_assignments
+
 def max_cover_sampling(graph, K):
 	"""
 	Performs max cover on the graph, extracts K cover points, 
@@ -97,14 +126,15 @@ def max_cover_sampling(graph, K):
 	"""
 
 	# 1. Max Cover
-	cover_points, _ = max_cover(graph, K)  # Implement your max_cover function here
+	cover_points, _, cluster_assignments = max_cover_cluster(graph, K)  # Implement your max_cover function here
 
 	# 2. Initialize clusters
-	clusters = [[] for _ in range(K)]
-	for i, node in enumerate(graph.nodes):
-		# Assign each node to the closest cover point
-		closest_cover_point = min(cover_points, key=lambda x: nx.shortest_path_length(graph, node, x))
-		clusters[cover_points.index(closest_cover_point)].append(i)
+	clusters = [[] for _ in range(len(cover_points))]
+	for i in range(len(cover_points)):
+		clusters[i].append(cover_points[i])
+		for node, cluster_id in cluster_assignments.item():
+			if cluster_id == i:
+				clusters[i].append(node)
 
 	# 3. Calculate cluster probabilities
 	cluster_sizes = [len(cluster) for cluster in clusters]
