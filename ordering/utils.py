@@ -127,10 +127,11 @@ def max_cover_sampling(graph, K):
 
 	# 1. Max Cover
 	cover_points, _, cluster_assignments = max_cover_cluster(graph, K)  # Implement your max_cover function here
+	num_clusters = len(cover_points)
 
 	# 2. Initialize clusters
-	clusters = [[] for _ in range(len(cover_points))]
-	for i in range(len(cover_points)):
+	clusters = [[] for _ in range(num_clusters)]
+	for i in range(num_clusters):
 		clusters[i].append(cover_points[i])
 		for node, cluster_id in cluster_assignments.items():
 			if cluster_id == i:
@@ -145,7 +146,7 @@ def max_cover_sampling(graph, K):
 	sampled_indices = []
 	while len(sampled_indices) < len(graph.nodes):
 		# Select a cluster based on probabilities
-		selected_cluster = np.random.choice(K, p=cluster_probs)
+		selected_cluster = np.random.choice(num_clusters, p=cluster_probs)
 		# Sample a point from the selected cluster
 		sampled_index = random.choice(clusters[selected_cluster])
 		# Check if already sampled
