@@ -107,7 +107,7 @@ class NNModel:
 
             pred = []
             k = min(i, self.n_neighbors)
-            print(dist)
+            # print(dist)
             ranks = dist.argsort()[:k]
             for j in range(train_ys.shape[0]): # Iterate over output dimensions 
                 y, w = train_ys[j, ranks], weights[ranks] # select y and w for corresponding dimension
@@ -148,7 +148,7 @@ class LeastSquaresModel:
             pred = test_x.T @ ws
             preds.append(pred.squeeze())
 
-        print(preds)
+        # print(preds)
         return torch.stack(preds, dim=0)
 
 class AveragingModel:
