@@ -62,7 +62,7 @@ def max_cover_random(data, sim_thresh=0.7, seed=42):
     # Runs max cover on graph with similarity threshold, then randomly permutes remaining data
     np.random.seed(seed)
     cos_sim = cosine_similarity(data)
-    G = build_graph = build_graph(cos_sim, sim_thresh=sim_thresh)
+    G = build_graph(cos_sim, sim_thresh=sim_thresh)
     samples, _ = max_cover(G, len(data))
 
     all_idx = set(list(range(len(data))))
