@@ -172,10 +172,10 @@ class DecisionTree(Task):
         dt = dt_tensor[0]  
         target = target_tensor[0] 
 
-        cur_nodes = torch.zeros(xs.shape[0], device=xs.device).long() 
+        cur_nodes = torch.zeros(xs.shape[1], device=xs.device).long() 
         for j in range(self.depth):
             cur_coords = dt[cur_nodes]
-            cur_decisions = xs_bool[torch.arange(xs_bool.shape[0]), cur_coords]
+            cur_decisions = xs_bool[torch.arange(xs_bool.shape[1]), cur_coords]
             cur_nodes = 2 * cur_nodes + 1 + cur_decisions
 
         # Return the target value for the final node
