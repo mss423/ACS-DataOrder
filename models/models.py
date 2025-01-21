@@ -94,7 +94,8 @@ class NNModel:
                 continue
             train_xs, train_ys = xs[:, :i], ys[:, :i]
             test_x = xs[:, i : i + 1]
-            dist = (train_xs - test_x).square().sum(dim=0).sqrt()
+            # dist = (train_xs - test_x).square().sum(dim=0).sqrt()
+            dist = torch.norm(train_xs - test_x.squeeze(1)[:, None], dim=0)
 
             if self.weights == "uniform":
                 weights = torch.ones_like(dist)
@@ -108,12 +109,13 @@ class NNModel:
             k = min(i, self.n_neighbors)
             print(dist)
             ranks = dist.argsort()[:k]
-            for y, w, n in zip(train_ys, weights, ranks):
-                y, w = y[n], w[n]
-                pred.append((w * y).sum() / w.sum())
-            preds.append(torch.stack(pred))
+            for j in range(train_ys.shape[0]): # Iterate over output dimensions 
+                y, w = train_ys[j, ranks], weights[ranks] # select y and w for corresponding dimension
+                pred.append((w * y).sum() / w.sum()) # Calculate prediction for each dim
+                
+            preds.append(torch.tensor(pred)) # Append the prediction for the datapoint
 
-        return torch.stack(preds, dim=1)
+        return torch.stack(preds, dim=1) # Stack predictions for all datapoints
 
 
 # xs and ys should be on cpu for this method. Otherwise the output maybe off in case when train_xs is not full rank due to the implementation of torch.linalg.lstsq.
