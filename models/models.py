@@ -168,13 +168,20 @@ class AveragingModel:
             if i == 0:
                 preds.append(torch.zeros_like(ys[:, 0]))  # predict zero for first point
                 continue
+            
             train_xs, train_ys = xs[:, :i], ys[:, :i]
             test_x = xs[:, i : i + 1]
 
-            train_zs = train_xs * train_ys.unsqueeze(dim=-1)
-            w_p = train_zs.mean(dim=1).unsqueeze(dim=-1)
-            pred = test_x @ w_p
-            preds.append(pred[:, 0, 0])
+            # Reshape train_ys for proper multiplication with train_xs
+            train_zs = train_xs * train_ys.unsqueeze(dim=0) 
+
+            # Calculate weighted average
+            w_p = train_zs.mean(dim=1) 
+
+            # Perform prediction
+            pred = (test_x * w_p.unsqueeze(dim=1)).sum(dim=0)
+
+            preds.append(pred)
 
         return torch.stack(preds, dim=1)
 
