@@ -132,7 +132,7 @@ def max_cover_sampling(graph, K):
 	clusters = [[] for _ in range(len(cover_points))]
 	for i in range(len(cover_points)):
 		clusters[i].append(cover_points[i])
-		for node, cluster_id in cluster_assignments.item():
+		for node, cluster_id in cluster_assignments.items():
 			if cluster_id == i:
 				clusters[i].append(node)
 
