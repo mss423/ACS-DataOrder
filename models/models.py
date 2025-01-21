@@ -166,24 +166,22 @@ class AveragingModel:
 
         for i in inds:
             if i == 0:
-                preds.append(torch.zeros_like(ys[:, 0]).squeeze())  # predict zero for first point
+                # For the first point, predict 0 
+                preds.append(torch.tensor([0.0]))  
                 continue
-            
+
             train_xs, train_ys = xs[:, :i], ys[:, :i]
             test_x = xs[:, i : i + 1]
-
-            # Reshape train_ys for proper multiplication with train_xs
-            train_zs = train_xs * train_ys.unsqueeze(dim=0) 
-
-            # Calculate weighted average
-            w_p = train_zs.mean(dim=1) 
-
-            # Perform prediction
-            pred = (test_x * w_p.unsqueeze(dim=1)).sum(dim=0)
-
+            
+            # Estimate w by averaging yi * xi
+            w = (train_xs * train_ys).mean(dim=1)  
+            
+            # Compute the inner product of w and test_x
+            pred = torch.dot(w, test_x.squeeze())  
+            
             preds.append(pred)
 
-        return torch.stack(preds, dim=0)
+        return torch.tensor(preds)
 
 # Lasso regression (for sparse linear regression).
 # Seems to take more time as we decrease alpha.
