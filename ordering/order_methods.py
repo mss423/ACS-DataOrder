@@ -76,8 +76,7 @@ def max_cover_pseudo(data, sim_thresh=0.7, seed=42):
     np.random.seed(seed)
     cos_sim = cosine_similarity(data)
     G = build_graph(cos_sim, sim_thresh=sim_thresh)
-    samples, _ = max_cover_sampling(G, len(data))
-
+    samples = max_cover_sampling(G, len(data))
     return samples
 
 def max_k_cover(data, Ks, sim_thresh=0.7):
