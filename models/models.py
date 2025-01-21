@@ -183,7 +183,7 @@ class AveragingModel:
 
             preds.append(pred)
 
-        return torch.stack(preds, dim=1)
+        return torch.stack(preds, dim=0)
 
 # Lasso regression (for sparse linear regression).
 # Seems to take more time as we decrease alpha.
