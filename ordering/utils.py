@@ -144,7 +144,8 @@ def max_cover_sampling(graph, K):
 	cluster_probs = [size / total_size for size in cluster_sizes]
 
 	# 4. Repeatedly sample without replacement
-	sampled_indices = []
+	# sampled_indices = []
+	sampled_indices = cover_points # start with max cover cluster centers
 	while len(sampled_indices) < len(graph.nodes):
 		# Select a cluster based on probabilities
 		selected_cluster = np.random.choice(num_clusters, p=cluster_probs)
