@@ -106,7 +106,8 @@ class NNModel:
 
             pred = []
             k = min(i, self.n_neighbors)
-            ranks = dist.argsort()[:, :k]
+            print(dist)
+            ranks = dist.argsort()[:k]
             for y, w, n in zip(train_ys, weights, ranks):
                 y, w = y[n], w[n]
                 pred.append((w * y).sum() / w.sum())
