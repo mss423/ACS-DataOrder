@@ -99,7 +99,7 @@ def max_cover_cluster(graph, k):
 		# covered_nodes.update(graph.neighbors(max_cover_node))
 
 		# Assign clusters
-		cluster_assignment[max_cover_node] = i
+		cluster_assignments[max_cover_node] = i
 		for neighbor in graph.neighbors(max_cover_node):
 			if neighbor not in covered_nodes:
 				cluster_assignments[neighbor] = i
