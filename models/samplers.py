@@ -164,15 +164,15 @@ class DecisionTree(Task):
     def evaluate(self, xs):
         dt_tensor = self.dt_tensor.to(xs.device)
         target_tensor = self.target_tensor.to(xs.device)
-        ys_b = torch.zeros(xs_b.shape[0], xs_b.shape[1], device=xs_b.device)
+        ys_b = torch.zeros(xs.shape[0], xs.shape[1], device=xs.device)
     
         # Iterate over samples (dimension 1)
-        for i in range(xs_b.shape[1]):  # Changed from xs_b.shape[0] to xs_b.shape[1]
-            xs_bool = xs_b[:, i] > 0  # Accessing sample i using slicing
+        for i in range(xs.shape[1]):  # Changed from xs_b.shape[0] to xs_b.shape[1]
+            xs_bool = xs[:, i] > 0  # Accessing sample i using slicing
             dt = dt_tensor
             target = target_tensor
 
-            cur_nodes = torch.zeros(1, device=xs_b.device).long() # Initialize cur_nodes for single sample
+            cur_nodes = torch.zeros(1, device=xs.device).long() # Initialize cur_nodes for single sample
             for j in range(self.depth):
                 cur_coords = dt[cur_nodes]
                 cur_decisions = xs_bool[cur_coords.item()] # Access single element from xs_bool
