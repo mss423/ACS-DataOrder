@@ -107,7 +107,7 @@ class NNModel:
 
             pred = []
             k = min(i, self.n_neighbors)
-            # print(dist)
+
             ranks = dist.argsort()[:k]
             for j in range(train_ys.shape[0]): # Iterate over output dimensions 
                 y, w = train_ys[j, ranks], weights[ranks] # select y and w for corresponding dimension
@@ -166,7 +166,7 @@ class AveragingModel:
 
         for i in inds:
             if i == 0:
-                preds.append(torch.zeros_like(ys[:, 0]))  # predict zero for first point
+                preds.append(torch.zeros(xs.shape[0], 1))
                 continue
             
             train_xs, train_ys = xs[:, :i], ys[:, :i]
