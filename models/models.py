@@ -94,7 +94,7 @@ class NNModel:
                 continue
             train_xs, train_ys = xs[:, :i], ys[:, :i]
             test_x = xs[:, i : i + 1]
-            dist = (train_xs - test_x).square().sum(dim=1).sqrt()
+            dist = (train_xs - test_x).square().sum(dim=0).sqrt()
 
             if self.weights == "uniform":
                 weights = torch.ones_like(dist)
