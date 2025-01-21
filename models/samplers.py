@@ -175,7 +175,7 @@ class DecisionTree(Task):
             cur_nodes = torch.zeros(1, device=xs.device).long() # Initialize cur_nodes for single sample
             for j in range(self.depth):
                 cur_coords = dt[cur_nodes]
-                cur_decisions = xs_bool[cur_coords.item()] # Access single element from xs_bool
+                cur_decisions = xs_bool[cur_coords] # Access single element from xs_bool
                 cur_nodes = 2 * cur_nodes + 1 + cur_decisions
 
             ys_b[:, i] = target[cur_nodes]  # Assign prediction to sample i
