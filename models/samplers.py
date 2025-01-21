@@ -164,22 +164,23 @@ class DecisionTree(Task):
     def evaluate(self, xs):
         dt_tensor = self.dt_tensor.to(xs.device)
         target_tensor = self.target_tensor.to(xs.device)
+        ys_b = torch.zeros(xs_b.shape[0], xs_b.shape[1], device=xs_b.device)
+    
+        # Iterate over samples (dimension 1)
+        for i in range(xs_b.shape[1]):  # Changed from xs_b.shape[0] to xs_b.shape[1]
+            xs_bool = xs_b[:, i] > 0  # Accessing sample i using slicing
+            dt = dt_tensor
+            target = target_tensor
 
-        # Assume xs is a single data point
-        xs_bool = xs > 0
+            cur_nodes = torch.zeros(1, device=xs_b.device).long() # Initialize cur_nodes for single sample
+            for j in range(self.depth):
+                cur_coords = dt[cur_nodes]
+                cur_decisions = xs_bool[cur_coords.item()] # Access single element from xs_bool
+                cur_nodes = 2 * cur_nodes + 1 + cur_decisions
 
-        # Use the single decision tree
-        dt = dt_tensor[0]  
-        target = target_tensor[0] 
+            ys_b[:, i] = target[cur_nodes]  # Assign prediction to sample i
 
-        cur_nodes = torch.zeros(xs.shape[0], device=xs.device).long() 
-        for j in range(self.depth):
-            cur_coords = dt[cur_nodes]
-            cur_decisions = xs_bool[torch.arange(xs_bool.shape[0]), cur_coords]
-            cur_nodes = 2 * cur_nodes + 1 + cur_decisions
-
-        # Return the target value for the final node
-        return target[cur_nodes]
+        return ys_b
 
     @staticmethod
     def generate_pool_dict(n_dims, num_tasks, hidden_layer_size=4, **kwargs):
