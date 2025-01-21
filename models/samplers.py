@@ -103,16 +103,15 @@ class SparseLinearRegression(LinearRegression):
             valid_coords = n_dims
         assert valid_coords <= n_dims
 
-        for i, w_b in enumerate(self.w):
-            mask = torch.ones(n_dims).bool()
-            if seeds is None:
-                perm = torch.randperm(valid_coords)
-            else:
-                generator = torch.Generator()
-                generator.manual_seed(seeds[i])
-                perm = torch.randperm(valid_coords, generator=generator)
-            mask[perm[:sparsity]] = False
-            w_b[mask] = 0
+        mask = torch.ones(n_dims).bool()
+        if seeds is None:
+            perm = torch.randperm(valid_coords)
+        else:
+            generator = torch.Generator()
+            generator.manual_seed(seeds[i])
+            perm = torch.randperm(valid_coords, generator=generator)
+        mask[perm[:sparsity]] = False
+        self.w[mask] = 0
 
     def evaluate(self, xs):
         w = self.w.to(xs.device)
