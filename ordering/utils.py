@@ -1,5 +1,6 @@
 import networkx as nx
 import numpy as np
+import random
 
 def build_graph(cos_sim, sim_thresh=0.0, max_degree=None, labels=None):
 	G = nx.Graph()
