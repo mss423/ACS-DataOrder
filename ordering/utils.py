@@ -151,7 +151,8 @@ def max_cover_recursive(graph, k, covered=None):
 	selected_nodes = []
 	covered_nodes = set()
 	if covered:
-		covered_nodes.add(covered)
+		for x in covered:
+			covered_nodes.add(nodes[covered])
 
 	for _ in range(k):
 		if not nodes:
