@@ -104,8 +104,12 @@ def acs_ks_range(data, Ks):
         _, _, selected_samples[K] = calculate_similarity_threshold(cos_sim, K, coverage=0.9)
     return selected_samples
 
+def hierarchical_max_cover(data):
+    cos_sim = cosine_similarity(data)
+    G = build_graph(cos_sim, sim_thresh=0.9)
+
 # METHODS TO IMPLEMENT
 
-# Curriculum learning
+# Curriculum learning (?)
 
 # Hierarchical Max K Cover
