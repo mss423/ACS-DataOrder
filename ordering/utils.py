@@ -64,7 +64,7 @@ def calculate_similarity_threshold(data, num_samples, coverage, cap=None, epsilo
 
 def max_cover(graph, k):
 	nodes = list(graph.nodes())
-	selected_nodes = set()
+	selected_nodes = []
 	covered_nodes = set()
 
 	for _ in range(k):
@@ -73,7 +73,7 @@ def max_cover(graph, k):
 		max_cover_node = max([node for node in nodes if node not in covered_nodes],
 			key=lambda n: len([neighbor for neighbor in graph.neighbors(n) if neighbor not in covered_nodes])
 			)
-		selected_nodes.add(max_cover_node)
+		selected_nodes.append(max_cover_node)
 		covered_nodes.add(max_cover_node)
 		covered_nodes.update(graph.neighbors(max_cover_node))
 
@@ -81,11 +81,11 @@ def max_cover(graph, k):
 		for neighbor in graph.neighbors(max_cover_node):
 			if neighbor in nodes:
 				nodes.remove(neighbor)
-	return list(selected_nodes), len(nodes)
+	return selected_nodes, len(nodes)
 
 def max_cover_cluster(graph, k):
 	nodes = list(graph.nodes())
-	selected_nodes = set()
+	selected_nodes = []
 	covered_nodes = set()
 	cluster_assignments = {}
 
@@ -95,7 +95,7 @@ def max_cover_cluster(graph, k):
 		max_cover_node = max([node for node in nodes if node not in covered_nodes],
 			key=lambda n: len([neighbor for neighbor in graph.neighbors(n) if neighbor not in covered_nodes])
 			)
-		selected_nodes.add(max_cover_node)
+		selected_nodes.append(max_cover_node)
 		covered_nodes.add(max_cover_node)
 		# covered_nodes.update(graph.neighbors(max_cover_node))
 
@@ -110,7 +110,7 @@ def max_cover_cluster(graph, k):
 		for neighbor in graph.neighbors(max_cover_node):
 			if neighbor in nodes:
 				nodes.remove(neighbor)
-	return list(selected_nodes), len(nodes), cluster_assignments
+	return selected_nodes, len(nodes), cluster_assignments
 
 def max_cover_sampling(graph, K):
 	"""
