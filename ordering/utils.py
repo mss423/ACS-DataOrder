@@ -113,7 +113,7 @@ def binary_thresh_search(data, num_samples, coverage, cap=None, epsilon=None, si
 		count += 1
 
 		node_graph = build_graph(data, sim / 1000, max_degree=cap, labels=labels)
-		samples = max_cover_recursive(node_graph, covered=covered)
+		samples = max_cover_recursive(node_graph, num_samples, covered=covered)
 		current_coverage = (total_num - rem_nodes) / total_num
 
 		if current_coverage < coverage:
@@ -146,7 +146,7 @@ def max_cover(graph, k):
 				nodes.remove(neighbor)
 	return selected_nodes, len(nodes)
 
-def max_cover_recursive(graph, covered=None):
+def max_cover_recursive(graph, k, covered=None):
 	nodes = list(graph.nodes())
 	selected_nodes = []
 	covered_nodes = set()
