@@ -63,8 +63,9 @@ def max_cover_random(data, threshold=0.5, seed=42, max_degree=None):
     np.random.seed(seed)
 
     cos_sim = cosine_similarity(data)
+    cos_sim = np.clip(cos_sim, -1, 1)
     scaled_sim = np.arccos(cos_sim) / np.pi
-    
+
     G = build_graph(scaled_sim, sim_thresh=threshold, max_degree=max_degree)
     samples, _ = max_cover(G, len(data))
 
@@ -78,6 +79,7 @@ def max_cover_pseudo(data, threshold=0.5, seed=42, max_degree=None):
     np.random.seed(seed)
 
     cos_sim = cosine_similarity(data)
+    cos_sim = np.clip(cos_sim, -1, 1)
     scaled_sim = np.arccos(cos_sim) / np.pi
 
     G = build_graph(scaled_sim, sim_thresh=threshold, max_degree=max_degree)
@@ -88,7 +90,10 @@ def max_cover_pseudo(data, threshold=0.5, seed=42, max_degree=None):
 def acs_k_cover(data, K):
     # For fixed K coverage, compute optimal threshold and return K samples
     cos_sim = cosine_similarity(data)
-    _, _, samples = calculate_similarity_threshold(cos_sim, K, coverage=0.9, sims=[0,1000])
+    cos_sim = np.clip(cos_sim, -1, 1)
+    scaled_sim = np.arccos(cos_sim) / np.pi
+
+    _, _, samples = calculate_similarity_threshold(scaled_sim, K, coverage=0.9, sims=[0,1000])
     return samples
 
 def hierarchical_acs(data, covered=None):
