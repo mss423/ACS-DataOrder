@@ -1,29 +1,11 @@
 import torch
 import torch.nn as nn
-from transformers import GPT2Model, GPT2Config
 from tqdm import tqdm
 from sklearn.svm import LinearSVC
 from sklearn.linear_model import LogisticRegression, Lasso
 import warnings
 from sklearn import tree
 import xgboost as xgb
-
-from base_models import NeuralNetwork, ParallelNetworks
-
-
-def build_model(conf):
-    if conf.family == "gpt2":
-        model = TransformerModel(
-            n_dims=conf.n_dims,
-            n_positions=conf.n_positions,
-            n_embd=conf.n_embd,
-            n_layer=conf.n_layer,
-            n_head=conf.n_head,
-        )
-    else:
-        raise NotImplementedError
-
-    return model
 
 
 def get_relevant_baselines(task_name):
@@ -76,56 +58,19 @@ def get_relevant_baselines(task_name):
     models = [model_cls(**kwargs) for model_cls, kwargs in task_to_baselines[task_name]]
     return models
 
+class NeuralNetwork(nn.Module):
+    def __init__(self, in_size=50, hidden_size=1000, out_size=1):
+        super(NeuralNetwork, self).__init__()
 
-class TransformerModel(nn.Module):
-    def __init__(self, n_dims, n_positions, n_embd=128, n_layer=12, n_head=4):
-        super(TransformerModel, self).__init__()
-        configuration = GPT2Config(
-            n_positions=2 * n_positions,
-            n_embd=n_embd,
-            n_layer=n_layer,
-            n_head=n_head,
-            resid_pdrop=0.0,
-            embd_pdrop=0.0,
-            attn_pdrop=0.0,
-            use_cache=False,
+        self.net = nn.Sequential(
+            nn.Linear(in_size, hidden_size),
+            nn.ReLU(),
+            nn.Linear(hidden_size, out_size),
         )
-        self.name = f"gpt2_embd={n_embd}_layer={n_layer}_head={n_head}"
 
-        self.n_positions = n_positions
-        self.n_dims = n_dims
-        self._read_in = nn.Linear(n_dims, n_embd)
-        self._backbone = GPT2Model(configuration)
-        self._read_out = nn.Linear(n_embd, 1)
-
-    @staticmethod
-    def _combine(xs_b, ys_b):
-        """Interleaves the x's and the y's into a single sequence."""
-        bsize, points, dim = xs_b.shape
-        ys_b_wide = torch.cat(
-            (
-                ys_b.view(bsize, points, 1),
-                torch.zeros(bsize, points, dim - 1, device=ys_b.device),
-            ),
-            axis=2,
-        )
-        zs = torch.stack((xs_b, ys_b_wide), dim=2)
-        zs = zs.view(bsize, 2 * points, dim)
-        return zs
-
-    def forward(self, xs, ys, inds=None):
-        if inds is None:
-            inds = torch.arange(ys.shape[1])
-        else:
-            inds = torch.tensor(inds)
-            if max(inds) >= ys.shape[1] or min(inds) < 0:
-                raise ValueError("inds contain indices where xs and ys are not defined")
-        zs = self._combine(xs, ys)
-        embeds = self._read_in(zs)
-        output = self._backbone(inputs_embeds=embeds).last_hidden_state
-        prediction = self._read_out(output)
-        return prediction[:, ::2, 0][:, inds]  # predict only on xs
-
+    def forward(self, x):
+        out = self.net(x)
+        return out
 
 class NNModel:
     def __init__(self, n_neighbors, weights="uniform"):
@@ -149,7 +94,8 @@ class NNModel:
                 continue
             train_xs, train_ys = xs[:, :i], ys[:, :i]
             test_x = xs[:, i : i + 1]
-            dist = (train_xs - test_x).square().sum(dim=2).sqrt()
+            # dist = (train_xs - test_x).square().sum(dim=0).sqrt()
+            dist = torch.norm(train_xs - test_x.squeeze(1)[:, None], dim=0)
 
             if self.weights == "uniform":
                 weights = torch.ones_like(dist)
@@ -161,13 +107,15 @@ class NNModel:
 
             pred = []
             k = min(i, self.n_neighbors)
-            ranks = dist.argsort()[:, :k]
-            for y, w, n in zip(train_ys, weights, ranks):
-                y, w = y[n], w[n]
-                pred.append((w * y).sum() / w.sum())
-            preds.append(torch.stack(pred))
 
-        return torch.stack(preds, dim=1)
+            ranks = dist.argsort()[:k]
+            for j in range(train_ys.shape[0]): # Iterate over output dimensions 
+                y, w = train_ys[j, ranks], weights[ranks] # select y and w for corresponding dimension
+                pred.append((w * y).sum() / w.sum()) # Calculate prediction for each dim
+                
+            preds.append(torch.tensor(pred)) # Append the prediction for the datapoint
+
+        return torch.stack(preds, dim=1) # Stack predictions for all datapoints
 
 
 # xs and ys should be on cpu for this method. Otherwise the output maybe off in case when train_xs is not full rank due to the implementation of torch.linalg.lstsq.
@@ -188,20 +136,20 @@ class LeastSquaresModel:
 
         for i in inds:
             if i == 0:
-                preds.append(torch.zeros_like(ys[:, 0]))  # predict zero for first point
+                preds.append(torch.zeros_like(ys[:, 0].squeeze()))  # predict zero for first point
                 continue
-            train_xs, train_ys = xs[:, :i], ys[:, :i]
+            train_xs, train_ys = xs[:, :i], ys[:,:i]
             test_x = xs[:, i : i + 1]
 
             ws, _, _, _ = torch.linalg.lstsq(
-                train_xs, train_ys.unsqueeze(2), driver=self.driver
+                train_xs.T, train_ys.T, driver=self.driver
             )
 
-            pred = test_x @ ws
-            preds.append(pred[:, 0, 0])
+            pred = test_x.T @ ws
+            preds.append(pred.squeeze())
 
-        return torch.stack(preds, dim=1)
-
+        # print(preds)
+        return torch.stack(preds, dim=0)
 
 class AveragingModel:
     def __init__(self):
@@ -218,18 +166,22 @@ class AveragingModel:
 
         for i in inds:
             if i == 0:
-                preds.append(torch.zeros_like(ys[:, 0]))  # predict zero for first point
+                # For the first point, predict 0 
+                preds.append(torch.tensor([0.0]))  
                 continue
+
             train_xs, train_ys = xs[:, :i], ys[:, :i]
             test_x = xs[:, i : i + 1]
+            
+            # Estimate w by averaging yi * xi
+            w = (train_xs * train_ys).mean(dim=1)  
+            
+            # Compute the inner product of w and test_x
+            pred = torch.dot(w, test_x.squeeze())  
+            
+            preds.append(pred)
 
-            train_zs = train_xs * train_ys.unsqueeze(dim=-1)
-            w_p = train_zs.mean(dim=1).unsqueeze(dim=-1)
-            pred = test_x @ w_p
-            preds.append(pred[:, 0, 0])
-
-        return torch.stack(preds, dim=1)
-
+        return torch.tensor(preds)
 
 # Lasso regression (for sparse linear regression).
 # Seems to take more time as we decrease alpha.
@@ -287,7 +239,6 @@ class LassoModel:
             preds.append(pred)
 
         return torch.stack(preds, dim=1)
-
 
 # Gradient Descent and variants.
 # Example usage: gd_model = GDModel(NeuralNetwork, {'in_size': 50, 'hidden_size':400, 'out_size' :1}, opt_alg = 'adam', batch_size = 100, lr = 5e-3, num_steps = 200)
@@ -399,7 +350,6 @@ class GDModel:
 
         return torch.stack(preds, dim=1)
 
-
 class DecisionTreeModel:
     def __init__(self, max_depth=None):
         self.max_depth = max_depth
@@ -437,7 +387,6 @@ class DecisionTreeModel:
             preds.append(pred)
 
         return torch.stack(preds, dim=1)
-
 
 class XGBoostModel:
     def __init__(self):

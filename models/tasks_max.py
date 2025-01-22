@@ -115,7 +115,6 @@ class SparseLinearRegression(LinearRegression):
     def __init__(
         self,
         n_dims,
-        batch_size,
         pool_dict=None,
         seeds=None,
         scale=1,
@@ -124,7 +123,7 @@ class SparseLinearRegression(LinearRegression):
     ):
         """scale: a constant by which to scale the randomly sampled weights."""
         super(SparseLinearRegression, self).__init__(
-            n_dims, batch_size, pool_dict, seeds, scale
+            n_dims, pool_dict, seeds, scale
         )
         self.sparsity = sparsity
         if valid_coords is None:
