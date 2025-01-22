@@ -82,7 +82,7 @@ def calculate_similarity_threshold(data, num_samples, coverage, cap=None, epsilo
 	# print(f"Converged to tau = {sim/1000}")
 	return sim / 1000, node_graph, samples
 
-def binary_thresh_search(data, num_samples, coverage, cap=None, epsilon=None, sims=[0,1000], covered=None):
+def binary_thresh_search(data, num_samples, coverage, cap=None, epsilon=None, sims=[0,1000], labels=None, covered=None):
 	total_num = len(data)
 	if epsilon is None:
 		# There is a chance that we never get close enough to "coverage" to terminate
