@@ -147,11 +147,12 @@ def binary_thresh_search(data, num_samples, coverage, cap=None, epsilon=None, si
 
 def max_cover(graph, k):
 	nodes = list(graph.nodes())
+	n = len(nodes)
 	selected_nodes = []
 	covered_nodes = set()
 
 	for _ in range(k):
-		if not nodes:
+		if not nodes or len(covered_nodes) == n:
 			break
 		max_cover_node = max([node for node in nodes if node not in covered_nodes],
 			key=lambda n: len([neighbor for neighbor in graph.neighbors(n) if neighbor not in covered_nodes])
