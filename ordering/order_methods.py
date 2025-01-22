@@ -91,7 +91,7 @@ def max_k_cover(data, Ks, sim_thresh=0.7):
 def acs_k_cover(data, K):
     # For fixed K coverage, compute optimal threshold and return K samples
     cos_sim = cosine_similarity(data)
-    _, _, samples = calculate_similarity_threshold(cos_sim, K, coverage=0.9)
+    _, _, samples = calculate_similarity_threshold(cos_sim, K, coverage=0.9, sims=[0,1000])
     return samples
 
 def acs_ks_range(data, Ks):
