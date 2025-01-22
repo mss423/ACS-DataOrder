@@ -115,6 +115,59 @@ def hierarchical_acs(data, covered=None):
     print(f"Sim_thresh = {thresh}, k = {len(selected_samples)}")
     return selected_samples + hierarchical_acs(data, selected_samples)
 
+def hierarchical_max_cover(data, initial_threshold=0.9, threshold_step=0.1):
+    """
+    Performs hierarchical max cover with decreasing similarity thresholds.
+
+    Args:
+        data (np.ndarray): The input data.
+        initial_threshold (float, optional): The initial similarity threshold. Defaults to 0.9.
+        threshold_step (float, optional): The step size for decreasing the threshold. Defaults to 0.1.
+
+    Returns:
+        list: A list of indices representing the data ordering.
+    """
+
+    all_samples = list(range(len(data)))  # Initialize with all data point indices
+    covered_samples = []  # Initialize covered samples as an empty list
+    threshold = initial_threshold
+    
+    while len(covered_samples) < len(all_samples):
+        # Construct the similarity matrix
+        cos_sim = cosine_similarity(data)
+        
+        # Build the graph for the current threshold
+        node_graph = build_graph(data, threshold, max_degree=len(data)) # No cap on degree for max cover
+
+        # Find the max cover set for uncovered points
+        uncovered_samples = list(set(all_samples) - set(covered_samples))
+        
+        # If no uncovered samples are left, break out of loop
+        if not uncovered_samples:
+            break
+
+        # Map uncovered samples to original indices within the graph
+        uncovered_indices_in_graph = [all_samples.index(sample) for sample in uncovered_samples]
+
+        # Create a subgraph containing only uncovered samples
+        subgraph = {node: [neighbor for neighbor in neighbors if neighbor in uncovered_indices_in_graph] 
+                   for node, neighbors in node_graph.items() if node in uncovered_indices_in_graph}
+
+        # Select points for current similarity threshold using max cover
+        selected_samples_indices, _ = max_cover(subgraph, len(uncovered_samples))  # select all remaining points
+        
+        # Map selected indices back to original indices within all samples
+        selected_samples = [uncovered_samples[idx] for idx in selected_samples_indices]
+        
+        # Add selected samples to covered samples
+        covered_samples.extend(selected_samples)
+
+        # Decrease the similarity threshold
+        threshold -= threshold_step
+        threshold = max(0, threshold) # Avoid negative thresholds
+
+    return covered_samples
+
 
 # METHODS TO IMPLEMENT
 
