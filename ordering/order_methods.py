@@ -111,8 +111,8 @@ def hierarchical_acs(data, covered=None):
         K = len(covered) // 2
     else:
         K = len(data) // 2
-    selected_samples = binary_thresh_search(cos_sim, K, coverage=0.9, sims=[-1000,1000], covered=covered)
-    print(selected_samples)
+    thresh, _, selected_samples = binary_thresh_search(cos_sim, K, coverage=0.9, sims=[0,1000], covered=covered)
+    print(f"Sim_thresh = {thresh}, k = {len(selected_samples)}")
     return selected_samples + hierarchical_acs(data, selected_samples)
 
 

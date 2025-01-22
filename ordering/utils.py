@@ -92,7 +92,7 @@ def binary_thresh_search(data, num_samples, coverage, cap=None, epsilon=None, si
 		epsilon = 5 * 10 / total_num  # Dynamic epsilon
 
 	if coverage < num_samples / total_num:
-		node_graph = recursive_build_graph(data, 1, covered=covered)
+		node_graph = build_graph(data, 1, covered=covered)
 		samples, rem_nodes = max_cover(node_graph, num_samples)
 		return 1, node_graph, samples
 	# using an integer for sim threhsold avoids lots of floating drama!
@@ -112,8 +112,8 @@ def binary_thresh_search(data, num_samples, coverage, cap=None, epsilon=None, si
 			break
 		count += 1
 
-		node_graph = recursive_build_graph(data, sim / 1000, max_degree=cap, labels=labels, covered=covered)
-		samples, rem_nodes = max_cover(node_graph, num_samples)
+		node_graph = build_graph(data, sim / 1000, max_degree=cap, labels=labels, covered=covered)
+		samples = max_cover_recovered(node_graph, covered=covered)
 		current_coverage = (total_num - rem_nodes) / total_num
 
 		if current_coverage < coverage:
@@ -122,6 +122,7 @@ def binary_thresh_search(data, num_samples, coverage, cap=None, epsilon=None, si
 			sim_lower = sim
 		sim = (sim_upper + sim_lower) / 2
 	# print(f"Converged to tau = {sim/1000}")
+		covered = samples
 	return sim / 1000, node_graph, samples
 
 def max_cover(graph, k):
@@ -144,6 +145,27 @@ def max_cover(graph, k):
 			if neighbor in nodes:
 				nodes.remove(neighbor)
 	return selected_nodes, len(nodes)
+
+def max_cover_recursive(graph, covered=None):
+	nodes = list(graph.nodes())
+	selected_nodes = []
+	covered_nodes = set()
+	if covered:
+		covered_nodes.add(covered)
+
+	while nodes
+		max_cover_node = max([node for node in nodes if node not in covered_nodes],
+			key=lambda n: len([neighbor for neighbor in graph.neighbors(n) if neighbor not in covered_nodes])
+			)
+		selected_nodes.append(max_cover_node)
+		covered_nodes.add(max_cover_node)
+		covered_nodes.update(graph.neighbors(max_cover_node))
+
+		# Remove neighbors of selected node
+		for neighbor in graph.neighbors(max_cover_node):
+			if neighbor in nodes:
+				nodes.remove(neighbor)
+	return selected_nodes
 
 def max_cover_cluster(graph, k):
 	nodes = list(graph.nodes())
