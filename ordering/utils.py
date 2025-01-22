@@ -19,7 +19,7 @@ def build_graph(cos_sim, sim_thresh=0.0, max_degree=None, labels=None):
 		G.add_edge(i, i, weight=1)
 	return G
 
-def recursive_build_graoh(cos_sim, sim_thresh=0.0, max_degree=None, labels=None, covered=None):
+def recursive_build_graph(cos_sim, sim_thresh=0.0, max_degree=None, labels=None, covered=None):
 	G = nx.Graph()
 	for i in range(len(cos_sim)):
 		G.add_node(i)
