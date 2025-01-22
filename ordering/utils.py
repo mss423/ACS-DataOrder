@@ -151,6 +151,7 @@ def max_cover(graph, k):
 	covered_nodes = set()
 
 	for _ in range(k):
+		print(selected_nodes)
 		if not nodes:
 			break
 		max_cover_node = max([node for node in nodes if node not in covered_nodes],
