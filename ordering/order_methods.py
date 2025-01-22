@@ -68,7 +68,7 @@ def max_cover_random(data, sim_thresh=0.7, seed=42):
     all_idx = set(list(range(len(data))))
     remaining_indices = list(all_idx - set(samples))
     # Return the max cover and randomly permuted remainder
-    return samples, remaining_indices.sort()
+    return samples, remaining_indices
 
 def max_cover_pseudo(data, sim_thresh=0.7, seed=42):
     # Runs max cover on graph with similarity threshold, then randomly permutes remaining data
