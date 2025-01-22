@@ -90,8 +90,10 @@ def acs_k_cover(data, K):
     cos_sim = cosine_similarity(data)
     cos_sim = np.clip(cos_sim, -1, 1)
 
-    _, _, samples = calculate_similarity_threshold(scaled_sim, K, coverage=0.9, sims=[-1000,1000])
-    return samples
+    _, _, samples = calculate_similarity_threshold(cos_sim, K, coverage=1.0, sims=[-1000,1000])
+    all_idx = set(list(range(len(data))))
+    remaining_indices = list(all_idx - set(samples))
+    return samples + remaining_indices
 
 def hierarchical_acs(data, covered=None):
     if covered and len(covered) == 1:
