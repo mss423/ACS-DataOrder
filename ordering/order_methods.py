@@ -104,7 +104,7 @@ def acs_ks_range(data, Ks):
     return selected_samples
 
 def hierarchical_acs(data, covered=None):
-    if covered and len(covered) >= data.shape[0] - data.shape[1]:
+    if covered and len(covered) == 1:
         return []
     cos_sim = cosine_similarity(data)
     if covered: 
