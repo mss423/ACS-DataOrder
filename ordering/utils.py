@@ -21,21 +21,21 @@ def build_graph(cos_sim, sim_thresh=0.0, max_degree=None, labels=None):
 
 def build_dist_graph(data, threshold=0.5, alpha=1.0):
 	G = nx.Graph()
-    G.add_nodes_from(range(data.shape[0]))  # Add nodes
+	G.add_nodes_from(range(data.shape[0]))  # Add nodes
 
-    distances = pdist(data, metric='euclidean') 
-    
-    # Applying sigmoid function
-    normalized_distances = 1 / (1 + np.exp(alpha * distances))  
+	distances = pdist(data, metric='euclidean') 
+	
+	# Applying sigmoid function
+	normalized_distances = 1 / (1 + np.exp(alpha * distances))  
 
-    # Get indices of points where normalized distance is above threshold (since it's now similarity)
-    indices_i, indices_j = np.where(squareform(normalized_distances) > threshold)
+	# Get indices of points where normalized distance is above threshold (since it's now similarity)
+	indices_i, indices_j = np.where(squareform(normalized_distances) > threshold)
 
-    # Add edges to the graph
-    edges = list(zip(indices_i, indices_j))
-    G.add_edges_from(edges)
+	# Add edges to the graph
+	edges = list(zip(indices_i, indices_j))
+	G.add_edges_from(edges)
 
-    return G
+	return G
 
 def recursive_build_graph(cos_sim, sim_thresh=0.0, max_degree=None, labels=None, covered=None):
 	G = nx.Graph()
