@@ -103,9 +103,17 @@ def acs_ks_range(data, Ks):
         _, _, selected_samples[K] = calculate_similarity_threshold(cos_sim, K, coverage=0.9)
     return selected_samples
 
-def hierarchical_max_cover(data):
+def hierarchical_acs(data, covered=None):
+    if covered and len(covered) >= data.shape[0] - data.shape[1]:
+        return []
     cos_sim = cosine_similarity(data)
-    G = build_graph(cos_sim, sim_thresh=0.9)
+    if covered: 
+        K = len(covered) / 2
+    else:
+        K = len(data) / 2
+    selected_samples = binary_search_tresh(cos_sim, K, coverage=0.9, sims=[0,1000], covered=covered)
+    return selected_samples + hierarchical_acs(data_sub, selected_samples)
+
 
 # METHODS TO IMPLEMENT
 
