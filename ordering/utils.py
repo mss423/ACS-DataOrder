@@ -113,7 +113,7 @@ def binary_thresh_search(data, num_samples, coverage, cap=None, epsilon=None, si
 		count += 1
 
 		node_graph = build_graph(data, sim / 1000, max_degree=cap, labels=labels)
-		samples = max_cover_recursive(node_graph, num_samples, covered=covered)
+		samples, rem_nodes = max_cover_recursive(node_graph, num_samples, covered=covered)
 		current_coverage = (total_num - rem_nodes) / total_num
 
 		if current_coverage < coverage:
@@ -121,7 +121,7 @@ def binary_thresh_search(data, num_samples, coverage, cap=None, epsilon=None, si
 		else:
 			sim_lower = sim
 		sim = (sim_upper + sim_lower) / 2
-	# print(f"Converged to tau = {sim/1000}")
+		# print(f"Converged to tau = {sim/1000}")
 		covered = samples
 	return sim / 1000, node_graph, samples
 
