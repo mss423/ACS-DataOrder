@@ -65,7 +65,7 @@ def max_cover_random(data, sim_thresh=0.7, seed=42, max_degree=None):
     # cos_sim = cosine_similarity(data)
     # G = build_graph(cos_sim, sim_thresh=sim_thresh, max_degree=max_degree)
     
-    G = build_dist_graoh(data)
+    G = build_dist_graph(data)
     samples, _ = max_cover(G, len(data))
 
     all_idx = set(list(range(len(data))))
@@ -80,7 +80,7 @@ def max_cover_pseudo(data, sim_thresh=0.7, seed=42, max_degree=None):
     # cos_sim = cosine_similarity(data)
     # G = build_graph(cos_sim, sim_thresh=sim_thresh, max_degree=max_degree)
     
-    G = build_dist_graoh(data)
+    G = build_dist_graph(data)
     samples = max_cover_sampling(G, len(data))
     return samples
 
