@@ -92,7 +92,7 @@ def binary_thresh_search(data, num_samples, coverage, cap=None, epsilon=None, si
 		epsilon = 5 * 10 / total_num  # Dynamic epsilon
 
 	if coverage < num_samples / total_num:
-		node_graph = build_graph(data, 1, covered=covered)
+		node_graph = build_graph(data, 1)
 		samples, rem_nodes = max_cover(node_graph, num_samples)
 		return 1, node_graph, samples
 	# using an integer for sim threhsold avoids lots of floating drama!
@@ -112,7 +112,7 @@ def binary_thresh_search(data, num_samples, coverage, cap=None, epsilon=None, si
 			break
 		count += 1
 
-		node_graph = build_graph(data, sim / 1000, max_degree=cap, labels=labels, covered=covered)
+		node_graph = build_graph(data, sim / 1000, max_degree=cap, labels=labels)
 		samples = max_cover_recovered(node_graph, covered=covered)
 		current_coverage = (total_num - rem_nodes) / total_num
 
