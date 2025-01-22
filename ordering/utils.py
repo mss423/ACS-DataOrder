@@ -153,7 +153,9 @@ def max_cover_recursive(graph, covered=None):
 	if covered:
 		covered_nodes.add(covered)
 
-	while nodes:
+	for _ in range(k):
+		if not nodes:
+			break
 		max_cover_node = max([node for node in nodes if node not in covered_nodes],
 			key=lambda n: len([neighbor for neighbor in graph.neighbors(n) if neighbor not in covered_nodes])
 			)
@@ -165,7 +167,7 @@ def max_cover_recursive(graph, covered=None):
 		for neighbor in graph.neighbors(max_cover_node):
 			if neighbor in nodes:
 				nodes.remove(neighbor)
-	return selected_nodes
+	return selected_nodes, len(nodes)
 
 def max_cover_cluster(graph, k):
 	nodes = list(graph.nodes())
