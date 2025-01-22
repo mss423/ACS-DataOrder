@@ -58,14 +58,14 @@ def incremental_kmeans_ordering(data, Ks):
 
     return ordered_indices
 
-def max_cover_random(data, threshold=0.0, seed=42, max_degree=None):
+def max_cover_random(data, threshold=0.5, seed=42, max_degree=None):
     # Runs max cover on graph with similarity threshold, then randomly permutes remaining data
     np.random.seed(seed)
 
-    # cos_sim = cosine_similarity(data)
-    # G = build_graph(cos_sim, sim_thresh=sim_thresh, max_degree=max_degree)
+    cos_sim = cosine_similarity(data)
+    scaled_sim = np.arccos(cos_sim) / np.pi
     
-    G = build_dist_graph(data, threshold=threshold)
+    G = build_graph(scaled_sim, sim_thresh=threshold, max_degree=max_degree)
     samples, _ = max_cover(G, len(data))
 
     all_idx = set(list(range(len(data))))
@@ -73,14 +73,15 @@ def max_cover_random(data, threshold=0.0, seed=42, max_degree=None):
     # Return the max cover and randomly permuted remainder
     return samples, remaining_indices
 
-def max_cover_pseudo(data, threshold=0.0, seed=42, max_degree=None):
+def max_cover_pseudo(data, threshold=0.5, seed=42, max_degree=None):
     # Runs max cover on graph with similarity threshold, then randomly permutes remaining data
     np.random.seed(seed)
 
-    # cos_sim = cosine_similarity(data)
-    # G = build_graph(cos_sim, sim_thresh=sim_thresh, max_degree=max_degree)
+    cos_sim = cosine_similarity(data)
+    scaled_sim = np.arccos(cos_sim) / np.pi
+
+    G = build_graph(scaled_sim, sim_thresh=threshold, max_degree=max_degree)
     
-    G = build_dist_graph(data, threshold=threshold)
     samples = max_cover_sampling(G, len(data))
     return samples
 
