@@ -122,7 +122,7 @@ def binary_thresh_search(data, num_samples, coverage, cap=None, epsilon=None, si
 			sim_lower = sim
 		sim = (sim_upper + sim_lower) / 2
 		# print(f"Converged to tau = {sim/1000}")
-		covered = samples
+	covered = samples
 	return sim / 1000, node_graph, samples
 
 def max_cover(graph, k):
@@ -157,7 +157,7 @@ def max_cover_recursive(graph, k, covered=None):
 	for _ in range(k):
 		if not nodes:
 			break
-		print(len(covered_nodes))
+		# print(len(covered_nodes))
 		max_cover_node = max([node for node in nodes if node not in covered_nodes],
 			key=lambda n: len([neighbor for neighbor in graph.neighbors(n) if neighbor not in covered_nodes])
 			)
