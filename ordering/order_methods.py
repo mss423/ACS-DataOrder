@@ -108,7 +108,7 @@ def hierarchical_acs(data):
                 selected_samples.append(s)
 
         K = K // 2
-    print(len(selected_samples))
+
     if len(selected_samples) < len(data):
         all_idx = set(list(range(len(data))))
         remaining_indices = list(all_idx - set(selected_samples))
@@ -145,7 +145,6 @@ def hierarchical_max_cover(data, initial_threshold=0.9, threshold_step=0.1):
         # Decrease the similarity threshold
         threshold -= threshold_step
 
-    print(len(selected_samples))
     if len(selected_samples) < len(data):
         all_idx = set(list(range(len(data))))
         remaining_indices = list(all_idx - set(selected_samples))
@@ -174,6 +173,7 @@ def get_order(data, method_name):
     for i in range(data.shape[0]):
         cur_batch = np.array(data[i])
         order.append(order_fn(cur_batch))
+    print(order)
     order = torch.tensor(order, dtype=torch.int64)
     return order[:, :, None]
 
