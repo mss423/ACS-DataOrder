@@ -136,7 +136,6 @@ def hierarchical_max_cover(data, initial_threshold=0.5, threshold_step=0.1):
     cos_sim = cosine_similarity(data)
     cos_sim = np.clip(cos_sim, -1, 1)
     
-    return []
     while threshold >= 0.0 and len(selected_samples) != len(data):
         # Build the graph for the current threshold
         node_graph = build_graph(cos_sim, threshold) # No cap on degree for max cover

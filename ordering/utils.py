@@ -155,7 +155,7 @@ def max_cover(graph, k):
 	node_to_id = {node: i for i, node in enumerate(graph.nodes())}  
 	singleton_node_ids = [node_to_id[node] for node in graph.nodes() if graph.degree(node) == 0]
 	print(f"Number of singletons = {len(singleton_node_ids)}")
-	# covered_nodes.update(singleton_node_ids)
+	covered_nodes.update(singleton_node_ids)
 
 	for _ in range(k):
 		if not nodes:
