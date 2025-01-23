@@ -12,27 +12,7 @@ import yaml
 import models
 from samplers import get_data_sampler, sample_transformation
 from tasks import get_task_sampler
-
-
-def get_model_from_run(run_path, step=-1, only_conf=False):
-    config_path = os.path.join(run_path, "config.yaml")
-    with open(config_path) as fp:  # we don't Quinfig it to avoid inherits
-        conf = Munch.fromDict(yaml.safe_load(fp))
-    if only_conf:
-        return None, conf
-
-    model = models.build_model(conf.model)
-
-    if step == -1:
-        state_path = os.path.join(run_path, "state.pt")
-        state = torch.load(state_path)
-        model.load_state_dict(state["model_state_dict"])
-    else:
-        model_path = os.path.join(run_path, f"model_{step}.pt")
-        state_dict = torch.load(model_path)
-        model.load_state_dict(state_dict)
-
-    return model, conf
+from order_methods import get_order
 
 
 # Functions for evaluation
@@ -151,12 +131,13 @@ def aggregate_metrics(metrics, bootstrap_trials=1000):
 def eval_model(
     model,
     task_name,
-    data_name,
     n_dims,
     n_points,
-    prompting_strategy,
+    data_name="gaussian",
+    prompting_strategy="standard",
     num_eval_examples=1280,
     batch_size=64,
+    order_method=None,
     data_sampler_kwargs={},
     task_sampler_kwargs={},
 ):
@@ -180,6 +161,9 @@ def eval_model(
     generating_func = globals()[f"gen_{prompting_strategy}"]
     for i in range(num_eval_examples // batch_size):
         xs, xs_p = generating_func(data_sampler, n_points, batch_size)
+        if order_method:
+            order = get_order(xs, order_method)
+            xs = xs[torch.arange(batch_size)[:, None, None], order, torch.arange(n_dims)]
 
         metrics = eval_batch(model, task_sampler, xs, xs_p)
         all_metrics.append(metrics)
@@ -286,51 +270,6 @@ def compute_evals(all_models, evaluation_kwargs, save_path=None, recompute=False
 
     return all_metrics
 
-
-def get_run_metrics(
-    run_path, step=-1, cache=True, skip_model_load=False, skip_baselines=False
-):
-    if skip_model_load:
-        _, conf = get_model_from_run(run_path, only_conf=True)
-        all_models = []
-    else:
-        model, conf = get_model_from_run(run_path, step)
-        model = model.cuda().eval()
-        all_models = [model]
-        if not skip_baselines:
-            all_models += models.get_relevant_baselines(conf.training.task)
-    evaluation_kwargs = build_evals(conf)
-
-    if not cache:
-        save_path = None
-    elif step == -1:
-        save_path = os.path.join(run_path, "metrics.json")
-    else:
-        save_path = os.path.join(run_path, f"metrics_{step}.json")
-
-    recompute = False
-    if save_path is not None and os.path.exists(save_path):
-        checkpoint_created = os.path.getmtime(run_path)
-        cache_created = os.path.getmtime(save_path)
-        if checkpoint_created > cache_created:
-            recompute = True
-
-    all_metrics = compute_evals(all_models, evaluation_kwargs, save_path, recompute)
-    return all_metrics
-
-
-
-def conf_to_model_name(conf):
-    if conf.model.family == "gpt2":
-        return {
-            (3, 2): "Transformer-xs",
-            (6, 4): "Transformer-small",
-            (12, 8): "Transformer",
-        }[(conf.model.n_layer, conf.model.n_head)]
-    else:
-        return conf.wandb.name
-
-
 def baseline_names(name):
     if "OLS" in name:
         return "Least Squares"
@@ -349,51 +288,3 @@ def baseline_names(name):
     if "xgboost" in name:
         return "XGBoost"
     return name
-
-
-def read_run_dir(run_dir):
-    all_runs = {}
-    for task in os.listdir(run_dir):
-        task_dir = os.path.join(run_dir, task)
-        for run_id in os.listdir(task_dir):
-            run_path = os.path.join(task_dir, run_id)
-            _, conf = get_model_from_run(run_path, only_conf=True)
-            params = {}
-            params["run_id"] = run_id
-            params["task"] = task
-            params["model"] = conf_to_model_name(conf)
-            params["kwargs"] = "_".join(
-                f"{k}={v}" for k, v in conf.training.task_kwargs.items()
-            )
-            num_tasks = (
-                conf.training.num_tasks if "num_tasks" in conf.training else None
-            )
-            params["num_tasks"] = num_tasks if num_tasks is not None else -1
-            num_examples = (
-                conf.training.num_training_examples
-                if "num_training_examples" in conf.training
-                else None
-            )
-            params["num_examples"] = num_examples if num_examples is not None else -1
-            params["n_dims"] = conf.model.n_dims
-            params["n_layer"] = conf.model.n_layer
-            params["n_head"] = conf.model.n_head
-            params["run_name"] = conf.wandb.name
-
-            for k, v in params.items():
-                if k not in all_runs:
-                    all_runs[k] = []
-                all_runs[k].append(v)
-
-    df = pd.DataFrame(all_runs).sort_values("run_name")
-    assert len(df) == len(df.run_name.unique())
-    return df
-
-if __name__ == "__main__":
-    run_dir = sys.argv[1]
-    for task in os.listdir(run_dir):
-        task_dir = os.path.join(run_dir, task)
-        print(f"Evaluating task {task}")
-        for run_id in tqdm(os.listdir(task_dir)):
-            run_path = os.path.join(run_dir, task, run_id)
-            metrics = get_run_metrics(run_path)

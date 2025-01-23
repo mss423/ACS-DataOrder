@@ -1,6 +1,7 @@
 from sklearn.cluster import KMeans
 import networkx as nx
 import numpy as np
+import torch
 from sklearn.metrics.pairwise import cosine_similarity
 from utils import *
 
@@ -71,7 +72,7 @@ def max_cover_random(data, threshold=0.0, seed=42, max_degree=None):
     all_idx = set(list(range(len(data))))
     remaining_indices = list(all_idx - set(samples))
     # Return the max cover and randomly permuted remainder
-    return samples, remaining_indices
+    return samples + remaining_indices
 
 def max_cover_pseudo(data, threshold=0.0, seed=42, max_degree=None):
     # Runs max cover on graph with similarity threshold, then randomly permutes remaining data
@@ -161,7 +162,26 @@ def hierarchical_max_cover(data, initial_threshold=0.9, threshold_step=0.1):
     return covered_samples
 
 
-# METHODS TO IMPLEMENT
+# ---------------------- #
+
+def get_order(data, method_name):
+    name_to_fn = {
+        "max_cover": max_cover_random,
+        "pseudo": max_cover_pseudo,
+        "acs": acs_k_cover
+    }
+
+    if method_name not in name_to_fn:
+        print("Unknown ordering method!")
+        raise NotImplementedError
+
+    order_fn = name_to_fn[method_name]
+    order = []
+    for i in range(data.shape[0]):
+        cur_batch = np.array(data[i])
+        order.append(order_fn(cur_batch))
+    order = torch.tensor(order, dtype=torch.int64)
+    return order[:, :, None]
 
 # Curriculum learning (?)
 
