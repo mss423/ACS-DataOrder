@@ -91,22 +91,24 @@ def acs_k_cover(data, K):
     cos_sim = cosine_similarity(data)
     cos_sim = np.clip(cos_sim, -1, 1)
 
-    _, _, samples = calculate_similarity_threshold(cos_sim, K, coverage=1.0, sims=[-1000,1000])
+    _, _, samples = calculate_similarity_threshold(cos_sim, K, coverage=1.0, sims=[0,1000])
     all_idx = set(list(range(len(data))))
     remaining_indices = list(all_idx - set(samples))
     return samples + remaining_indices
 
-def hierarchical_acs(data, covered=None):
-    if covered and len(covered) == 1:
-        return []
+def hierarchical_acs(data):
+    selected_samples = []
+    K = len(data) // 2
     cos_sim = cosine_similarity(data)
-    if covered: 
-        K = len(covered) // 2
-    else:
-        K = len(data) // 2
-    thresh, _, selected_samples = binary_thresh_search(cos_sim, K, coverage=0.9, sims=[0,1000], covered=covered)
-    print(f"Sim_thresh = {thresh}, k = {len(selected_samples)}")
-    return selected_samples + hierarchical_acs(data, selected_samples)
+
+    while K >= 1 and len(selected_samples) != len(data):
+        _, _, samples = calculate_similarity_threshold(cos_sim, K, coverage=1.0, sims=[0,1000])
+        for s in samples:
+            if s not in selected_samples:
+                selected_samples.append(s)
+
+        K = K // 2
+    return selected_samples
 
 def hierarchical_max_cover(data, initial_threshold=0.9, threshold_step=0.1):
     """
@@ -121,45 +123,22 @@ def hierarchical_max_cover(data, initial_threshold=0.9, threshold_step=0.1):
         list: A list of indices representing the data ordering.
     """
 
-    all_samples = list(range(len(data)))  # Initialize with all data point indices
-    covered_samples = []  # Initialize covered samples as an empty list
+    selected_samples = []  # Initialize covered samples as an empty list
     threshold = initial_threshold
+    cos_sim = cosine_similarity(data)
     
-    while len(covered_samples) < len(all_samples):
-        # Construct the similarity matrix
-        cos_sim = cosine_similarity(data)
-        
+    while threshold >= 0.0 and len(selected_samples) != len(data):x
         # Build the graph for the current threshold
-        node_graph = build_graph(data, threshold, max_degree=len(data)) # No cap on degree for max cover
+        node_graph = build_graph(cos_sim, threshold) # No cap on degree for max cover
+        samples, _ = max_cover(node_graph, len(data))
 
-        # Find the max cover set for uncovered points
-        uncovered_samples = list(set(all_samples) - set(covered_samples))
-        
-        # If no uncovered samples are left, break out of loop
-        if not uncovered_samples:
-            break
-
-        # Map uncovered samples to original indices within the graph
-        uncovered_indices_in_graph = [all_samples.index(sample) for sample in uncovered_samples]
-
-        # Create a subgraph containing only uncovered samples
-        subgraph = {node: [neighbor for neighbor in neighbors if neighbor in uncovered_indices_in_graph] 
-                   for node, neighbors in node_graph.items() if node in uncovered_indices_in_graph}
-
-        # Select points for current similarity threshold using max cover
-        selected_samples_indices, _ = max_cover(subgraph, len(uncovered_samples))  # select all remaining points
-        
-        # Map selected indices back to original indices within all samples
-        selected_samples = [uncovered_samples[idx] for idx in selected_samples_indices]
-        
-        # Add selected samples to covered samples
-        covered_samples.extend(selected_samples)
+        for s in samples:
+            if s not in selected_samples:
+                selected_samples.append(s)
 
         # Decrease the similarity threshold
         threshold -= threshold_step
-        threshold = max(0, threshold) # Avoid negative thresholds
-
-    return covered_samples
+    return selected_samples
 
 
 # ---------------------- #
@@ -168,7 +147,9 @@ def get_order(data, method_name):
     name_to_fn = {
         "max_cover": max_cover_random,
         "pseudo": max_cover_pseudo,
-        "acs": acs_k_cover
+        "acs": acs_k_cover,
+        "hier_max": hierarchical_max_cover,
+        "hier_acs": hierarchical_acs
     }
 
     if method_name not in name_to_fn:
@@ -183,6 +164,3 @@ def get_order(data, method_name):
     order = torch.tensor(order, dtype=torch.int64)
     return order[:, :, None]
 
-# Curriculum learning (?)
-
-# Hierarchical Max K Cover
