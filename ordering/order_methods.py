@@ -5,6 +5,8 @@ import torch
 from sklearn.metrics.pairwise import cosine_similarity
 from utils import *
 
+import matplotlib.pyplot as plt
+
 def incremental_kmeans_ordering(data, Ks):
     """
     Orders data using an incremental k-means approach.
@@ -133,12 +135,20 @@ def hierarchical_max_cover(data, initial_threshold=0.9, threshold_step=0.1):
     threshold = initial_threshold
     cos_sim = cosine_similarity(data)
     cos_sim = np.clip(cos_sim, -1, 1)
+
+    cos_sim = cos_sim[np.triu_indices(cos_sim.shape[0], k=1)]
+    plt.hist(similarities, bins=20)  # Adjust 'bins' as needed
+    plt.xlabel("Cosine Similarity")
+    plt.ylabel("Frequency")
+    plt.title("Histogram of Cosine Similarity Values")
+    plt.show()
     
+    return []
     while threshold >= 0.0 and len(selected_samples) != len(data):
         # Build the graph for the current threshold
         node_graph = build_graph(cos_sim, threshold) # No cap on degree for max cover
-        # samples, _ = max_cover(node_graph, len(data))
-        samples, _ = max_cover_debug(node_graph, len(data))
+        samples, _ = max_cover(node_graph, len(data))
+        # samples, _ = max_cover_debug(node_graph, len(data))
 
         for s in samples:
             if s not in selected_samples:

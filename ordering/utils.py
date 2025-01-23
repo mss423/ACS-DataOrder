@@ -152,7 +152,7 @@ def max_cover(graph, k):
 	covered_nodes = set()
 
 	for _ in range(k):
-		if not nodes or len(covered_nodes) == n:
+		if not nodes:
 			break
 		max_cover_node = max([node for node in nodes if node not in covered_nodes],
 			key=lambda n: len([neighbor for neighbor in graph.neighbors(n) if neighbor not in covered_nodes])
