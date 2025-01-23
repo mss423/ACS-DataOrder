@@ -147,7 +147,6 @@ def hierarchical_max_cover(data, initial_threshold=0.5, threshold_step=0.1):
                 selected_samples.append(s)
 
         # Decrease the similarity threshold
-        print(len(selected_samples))
         threshold -= threshold_step
 
     if len(selected_samples) < len(data):
@@ -179,6 +178,7 @@ def get_order(data, method_name):
         cur_batch = np.array(data[i])
         order.append(order_fn(cur_batch))
     print(order)
+    print(order.shape)
     order = torch.tensor(order, dtype=torch.int64)
     return order[:, :, None]
 
