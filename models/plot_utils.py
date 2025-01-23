@@ -26,7 +26,7 @@ def baseline_names(name):
 # Pass set of results for different models fit to a given order
 def plot_results(metrics, normalization, trivial=1.0):
 	fig, ax = plt.subplots(1,1)
-	ax.axhline(trivia, ls="--", color="gray")
+	ax.axhline(trivial, ls="--", color="gray")
 	
 	color = 0
 	for name, vs in metrics.items():
