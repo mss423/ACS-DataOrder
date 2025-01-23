@@ -137,7 +137,7 @@ def eval_model(
     prompting_strategy="standard",
     num_eval_examples=1280,
     batch_size=64,
-    order_method=None,
+    method=None, # method of ordering data points
     data_sampler_kwargs={},
     task_sampler_kwargs={},
 ):
@@ -162,7 +162,7 @@ def eval_model(
     for i in range(num_eval_examples // batch_size):
         xs, xs_p = generating_func(data_sampler, n_points, batch_size)
         if order_method:
-            order = get_order(xs, order_method)
+            order = get_order(xs, method)
             xs = xs[torch.arange(batch_size)[:, None, None], order, torch.arange(n_dims)]
 
         metrics = eval_batch(model, task_sampler, xs, xs_p)
@@ -173,118 +173,14 @@ def eval_model(
     return aggregate_metrics(metrics)
 
 
-def build_evals(conf):
-    n_dims = conf.model.n_dims
-    n_points = conf.training.curriculum.points.end
-    batch_size = conf.training.batch_size
-
-    task_name = conf.training.task
-    data_name = conf.training.data
-
-    base_kwargs = {
-        "task_name": task_name,
-        "n_dims": n_dims,
-        "n_points": n_points,
-        "batch_size": batch_size,
-        "data_name": data_name,
-        "prompting_strategy": "standard",
-    }
-
-    evaluation_kwargs = {}
-
-    evaluation_kwargs["standard"] = {"prompting_strategy": "standard"}
-    if task_name != "linear_regression":
-        if task_name in ["relu_2nn_regression"]:
-            evaluation_kwargs["linear_regression"] = {"task_name": "linear_regression"}
-        for name, kwargs in evaluation_kwargs.items():
-            # allow kwargs to override base_kwargs values
-            evaluation_kwargs[name] = base_kwargs.copy()
-            evaluation_kwargs[name].update(kwargs)
-        return evaluation_kwargs
-
-    for strategy in [
-        "random_quadrants",
-        "orthogonal_train_test",
-        "overlapping_train_test",
-    ]:
-        evaluation_kwargs[strategy] = {"prompting_strategy": strategy}
-
-    for method in ["half_subspace", "skewed"]:
-        if "subspace" in method:
-            eigenvals = torch.zeros(n_dims)
-            eigenvals[: n_dims // 2] = 1
-        else:
-            eigenvals = 1 / (torch.arange(n_dims) + 1)
-
-        scale = sample_transformation(eigenvals, normalize=True)
-        evaluation_kwargs[f"{method}"] = {
-            "data_sampler_kwargs": {"scale": scale},
-        }
-
-    for dim in ["x", "y"]:
-        for scale in [0.333, 0.5, 2, 3]:
-            if dim == "x":
-                eigenvals = scale * torch.ones(n_dims)
-                t = sample_transformation(eigenvals)
-                scaling_args = {"data_sampler_kwargs": {"scale": t}}
-            else:
-                eigenvals = scale * torch.ones(n_dims)
-                scaling_args = {"task_sampler_kwargs": {"scale": scale}}
-
-            evaluation_kwargs[f"scale-{dim}={scale}"] = scaling_args
-
-    evaluation_kwargs[f"noisyLR"] = {
-        "task_sampler_kwargs": {"renormalize_ys": True, "noise_std": 1},
-        "task_name": "noisy_linear_regression",
-    }
-
-    for name, kwargs in evaluation_kwargs.items():
-        # allow kwargs to override base_kwargs values
-        evaluation_kwargs[name] = base_kwargs.copy()
-        evaluation_kwargs[name].update(kwargs)
-
-    return evaluation_kwargs
-
-
-def compute_evals(all_models, evaluation_kwargs, save_path=None, recompute=False):
-    try:
-        with open(save_path) as fp:
-            all_metrics = json.load(fp)
-    except Exception:
-        all_metrics = {}
-
-    for eval_name, kwargs in tqdm(evaluation_kwargs.items()):
+def collect_results(task_name, models, n_dims, n_points, order_methods=None):
+    results = {}
+    for method in tqdm(order_methods):
         metrics = {}
-        if eval_name in all_metrics and not recompute:
-            metrics = all_metrics[eval_name]
-        for model in all_models:
-            if model.name in metrics and not recompute:
-                continue
-
-            metrics[model.name] = eval_model(model, **kwargs)
-        all_metrics[eval_name] = metrics
-
-    if save_path is not None:
-        with open(save_path, "w") as fp:
-            json.dump(all_metrics, fp, indent=2)
-
-    return all_metrics
-
-def baseline_names(name):
-    if "OLS" in name:
-        return "Least Squares"
-    if name == "averaging":
-        return "Averaging"
-    if "NN" in name:
-        k = name.split("_")[1].split("=")[1]
-        return f"{k}-Nearest Neighbors"
-    if "lasso" in name:
-        alpha = name.split("_")[1].split("=")[1]
-        return f"Lasso (alpha={alpha})"
-    if "gd" in name:
-        return "2-layer NN, GD"
-    if "decision_tree" in name:
-        return "Greedy Tree Learning"
-    if "xgboost" in name:
-        return "XGBoost"
-    return name
+        for model in models:
+            if method == "random":
+                metrics[model.name] = eval_model(model, task_name, n_dims, n_points, method=None)
+            else:
+                metrics[model.name] = eval_model(model, task_name, n_dims, n_points, method=method)
+        results[method] = metrics
+    return results
