@@ -118,7 +118,7 @@ def hierarchical_acs(data):
 
     return selected_samples
 
-def hierarchical_max_cover(data, initial_threshold=0.9, threshold_step=0.1):
+def hierarchical_max_cover(data, initial_threshold=0.5, threshold_step=0.1):
     """
     Performs hierarchical max cover with decreasing similarity thresholds.
 
@@ -135,13 +135,6 @@ def hierarchical_max_cover(data, initial_threshold=0.9, threshold_step=0.1):
     threshold = initial_threshold
     cos_sim = cosine_similarity(data)
     cos_sim = np.clip(cos_sim, -1, 1)
-
-    cos_sim = cos_sim[np.triu_indices(cos_sim.shape[0], k=1)]
-    plt.hist(cos_sim, bins=20)  # Adjust 'bins' as needed
-    plt.xlabel("Cosine Similarity")
-    plt.ylabel("Frequency")
-    plt.title("Histogram of Cosine Similarity Values")
-    plt.show()
     
     return []
     while threshold >= 0.0 and len(selected_samples) != len(data):
