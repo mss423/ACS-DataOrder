@@ -161,7 +161,7 @@ def eval_model(
     generating_func = globals()[f"gen_{prompting_strategy}"]
     for i in range(num_eval_examples // batch_size):
         xs, xs_p = generating_func(data_sampler, n_points, batch_size)
-        if order_method:
+        if method:
             order = get_order(xs, method)
             xs = xs[torch.arange(batch_size)[:, None, None], order, torch.arange(n_dims)]
 
