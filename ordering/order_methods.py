@@ -143,6 +143,7 @@ def hierarchical_max_cover(data, initial_threshold=0.9, threshold_step=0.1):
                 selected_samples.append(s)
 
         # Decrease the similarity threshold
+        print(len(selected_samples))
         threshold -= threshold_step
 
     if len(selected_samples) < len(data):
