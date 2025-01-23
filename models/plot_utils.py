@@ -24,7 +24,7 @@ def baseline_names(name):
     return name
 
 # Pass set of results for different models fit to a given order
-def plot_results(metrics, normalization, trivial=1.0):
+def plot_results(metrics, normalization, trivial=1.0, xlim=None, ylim=None):
 	fig, ax = plt.subplots(1,1)
 	ax.axhline(trivial, ls="--", color="gray")
 	
@@ -44,6 +44,10 @@ def plot_results(metrics, normalization, trivial=1.0):
 	ax.set_ylabel("squared error")
 	ax.set_xlim(-1, 40)
 	ax.set_ylim(-0.1, 1.25)
+	if xlim:
+		ax.set_xlim(xlim[0], xlim[1])
+	if ylim:
+		ax.set_ylim(ylim[0], ylim[1])
 
 	legend = ax.legend(loc="upper left", bbox_to_anchor=(1, 1))
 	fig.set_size_inches(4, 3)
