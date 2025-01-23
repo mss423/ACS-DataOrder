@@ -170,26 +170,26 @@ def max_cover(graph, k):
 def max_cover_debug(graph, k):
 	selected_node_ids = []
 	node_to_id = {node: i for i, node in enumerate(graph.nodes())}  # Map nodes to IDs
-    
-    for _ in range(k):
-        # Check if any nodes remain
-        if not graph.nodes():
-            break
+	
+	for _ in range(k):
+		# Check if any nodes remain
+		if not graph.nodes():
+			break
 
-        # Find node with maximum uncovered neighbors
-        max_cover_node = max(graph.nodes(), 
-                             key=lambda node: len(list(nx.non_neighbors(graph, node)))) 
-        
-        # Add node to selected nodes and remove it and its neighbors from the graph
-        # selected_nodes.append(max_cover_node)
-        selected_node_ids.append(node_to_id[max_cover_node]) 
-        graph.remove_nodes_from([max_cover_node] + list(graph.neighbors(max_cover_node)))
-        
-        # Check for singletons and terminate if only those are left
-        if all(graph.degree(node) == 0 for node in graph.nodes()):
-            break
-            
-    return selected_node_ids, len(graph)
+		# Find node with maximum uncovered neighbors
+		max_cover_node = max(graph.nodes(), 
+							 key=lambda node: len(list(nx.non_neighbors(graph, node)))) 
+		
+		# Add node to selected nodes and remove it and its neighbors from the graph
+		# selected_nodes.append(max_cover_node)
+		selected_node_ids.append(node_to_id[max_cover_node]) 
+		graph.remove_nodes_from([max_cover_node] + list(graph.neighbors(max_cover_node)))
+		
+		# Check for singletons and terminate if only those are left
+		if all(graph.degree(node) == 0 for node in graph.nodes()):
+			break
+			
+	return selected_node_ids, len(graph)
 
 def max_cover_recursive(graph, k, covered=None):
 	nodes = list(graph.nodes())
