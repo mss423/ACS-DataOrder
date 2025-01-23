@@ -137,7 +137,7 @@ def hierarchical_max_cover(data, initial_threshold=0.9, threshold_step=0.1):
     cos_sim = np.clip(cos_sim, -1, 1)
 
     cos_sim = cos_sim[np.triu_indices(cos_sim.shape[0], k=1)]
-    plt.hist(similarities, bins=20)  # Adjust 'bins' as needed
+    plt.hist(cos_sim, bins=20)  # Adjust 'bins' as needed
     plt.xlabel("Cosine Similarity")
     plt.ylabel("Frequency")
     plt.title("Histogram of Cosine Similarity Values")
