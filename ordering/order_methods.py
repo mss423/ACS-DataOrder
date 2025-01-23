@@ -127,7 +127,7 @@ def hierarchical_max_cover(data, initial_threshold=0.9, threshold_step=0.1):
     threshold = initial_threshold
     cos_sim = cosine_similarity(data)
     
-    while threshold >= 0.0 and len(selected_samples) != len(data):x
+    while threshold >= 0.0 and len(selected_samples) != len(data):
         # Build the graph for the current threshold
         node_graph = build_graph(cos_sim, threshold) # No cap on degree for max cover
         samples, _ = max_cover(node_graph, len(data))
