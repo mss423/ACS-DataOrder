@@ -132,11 +132,13 @@ def hierarchical_max_cover(data, initial_threshold=0.9, threshold_step=0.1):
     selected_samples = []  # Initialize covered samples as an empty list
     threshold = initial_threshold
     cos_sim = cosine_similarity(data)
+    cos_sim = np.clip(cos_sim, -1, 1)
     
     while threshold >= 0.0 and len(selected_samples) != len(data):
         # Build the graph for the current threshold
         node_graph = build_graph(cos_sim, threshold) # No cap on degree for max cover
-        samples, _ = max_cover(node_graph, len(data))
+        # samples, _ = max_cover(node_graph, len(data))
+        samples, _ = max_cover_debug(node_graph, len(data))
 
         for s in samples:
             if s not in selected_samples:
