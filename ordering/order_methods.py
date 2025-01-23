@@ -108,10 +108,10 @@ def hierarchical_acs(data):
                 selected_samples.append(s)
 
         K = K // 2
-
+    print(len(selected_samples))
     if len(selected_samples) < len(data):
         all_idx = set(list(range(len(data))))
-        remaining_indices = list(all_idx - set(samples))
+        remaining_indices = list(all_idx - set(selected_samples))
         selected_samples.append(remaining_indices)
 
     return selected_samples
@@ -145,11 +145,12 @@ def hierarchical_max_cover(data, initial_threshold=0.9, threshold_step=0.1):
         # Decrease the similarity threshold
         threshold -= threshold_step
 
+    print(len(selected_samples))
     if len(selected_samples) < len(data):
         all_idx = set(list(range(len(data))))
-        remaining_indices = list(all_idx - set(samples))
+        remaining_indices = list(all_idx - set(selected_samples))
         selected_samples.append(remaining_indices)
-        
+
     return selected_samples
 
 
