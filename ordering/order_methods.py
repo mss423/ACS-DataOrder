@@ -114,7 +114,7 @@ def hierarchical_acs(data):
     if len(selected_samples) < len(data):
         all_idx = set(list(range(len(data))))
         remaining_indices = list(all_idx - set(selected_samples))
-        selected_samples.append(remaining_indices)
+        return selected_samples + remaining_indices
 
     return selected_samples
 
@@ -152,7 +152,7 @@ def hierarchical_max_cover(data, initial_threshold=0.5, threshold_step=0.1):
     if len(selected_samples) < len(data):
         all_idx = set(list(range(len(data))))
         remaining_indices = list(all_idx - set(selected_samples))
-        selected_samples.append(remaining_indices)
+        return selected_samples + remaining_indices
 
     return selected_samples
 
@@ -177,8 +177,6 @@ def get_order(data, method_name):
     for i in range(data.shape[0]):
         cur_batch = np.array(data[i])
         order.append(order_fn(cur_batch))
-    print(order)
-    print(order.shape)
     order = torch.tensor(order, dtype=torch.int64)
     return order[:, :, None]
 
