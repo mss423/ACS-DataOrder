@@ -190,7 +190,7 @@ class AveragingModel:
 # Lasso regression (for sparse linear regression).
 # Seems to take more time as we decrease alpha.
 class LassoModel:
-    def __init__(self, alpha, max_iter=100000):
+    def __init__(self, alpha, max_iter=1000):
         # the l1 regularizer gets multiplied by alpha.
         self.alpha = alpha
         self.max_iter = max_iter
