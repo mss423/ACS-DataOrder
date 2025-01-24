@@ -133,6 +133,7 @@ class LeastSquaresModel:
         for i in inds:
             if i == 0:
                 preds.append(torch.zeros_like(ys[:, 0]))  # predict zero for first point
+                ids.append(0)
                 continue
             train_xs, train_ys = xs[:, :i], ys[:, :i]
 
