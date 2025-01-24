@@ -50,7 +50,7 @@ def eval_batch_random(model, task_sampler, xs, xs_p=None):
 
     if xs_p is None:
         ys = task.evaluate(xs)
-        pred, ids = model(xs.to(device), ys.to(device)).detach()
+        pred, ids = model(xs.to(device), ys.to(device))#3.detach()
         metrics = task.get_metric()(pred.cpu(), ys[:,ids])
     else:
         b_size, n_points, _ = xs.shape
