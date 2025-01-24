@@ -37,7 +37,30 @@ def eval_batch(model, task_sampler, xs, xs_p=None):
             ys = task.evaluate(xs_comb)
 
             pred = model(xs_comb.to(device), ys.to(device), inds=[i]).detach()
-            metrics[:, i] = task.get_metric()(pred.cpu(), ys)[:, i]
+            metrics[:, i] = task.get_metric()(pred.cpu(), ys)[:, i] # test on next point in sequence
+
+    return metrics
+
+def eval_batch_random(model, task_sampler, xs, xs_p=None):
+    task = task_sampler()
+    if torch.cuda.is_available() and model.name.split("_")[0] in ["gpt2", "lstm"]:
+        device = "cuda"
+    else:
+        device = "cpu"
+
+    if xs_p is None:
+        ys = task.evaluate(xs)
+        pred, ids = model(xs.to(device), ys.to(device)).detach()
+        metrics = task.get_metric()(pred.cpu(), ys[:,ids])
+    else:
+        b_size, n_points, _ = xs.shape
+        metrics = torch.zeros(b_size, n_points)
+        for i in range(n_points):
+            xs_comb = torch.cat((xs[:, :i, :], xs_p[:, i:, :]), dim=1)
+            ys = task.evaluate(xs_comb)
+
+            pred, ids = model(xs_comb.to(device), ys.to(device), inds=[i]).detach()
+            metrics[:, i] = task.get_metric()(pred.cpu(), ys)[:, i] # test on next point in sequence
 
     return metrics
 
@@ -172,15 +195,73 @@ def eval_model(
 
     return aggregate_metrics(metrics)
 
+def eval_model_random(
+    model,
+    task_name,
+    n_dims,
+    n_points,
+    data_name="gaussian",
+    prompting_strategy="standard",
+    num_eval_examples=1280,
+    batch_size=64,
+    method=None, # method of ordering data points
+    data_sampler_kwargs={},
+    task_sampler_kwargs={},
+):
+    """
+    Evaluate a model on a task with a variety of strategies.
+       Args:
+       - task: which base task we are evaluating on. E.g., "linear_regression"
+       - prompting_strategy: how to construct the prompt, e.g., "random_quadrants"
+       - num_eval_examples: total number of examples to evaluate on
+       - **sampler_kwargs: remaining arguments to pass directly to the sampler
+    """
+
+    assert num_eval_examples % batch_size == 0
+    data_sampler = get_data_sampler(data_name, n_dims, **data_sampler_kwargs)
+    task_sampler = get_task_sampler(
+        task_name, n_dims, batch_size, **task_sampler_kwargs
+    )
+
+    all_metrics = []
+
+    generating_func = globals()[f"gen_{prompting_strategy}"]
+    for i in range(num_eval_examples // batch_size):
+        xs, xs_p = generating_func(data_sampler, n_points, batch_size)
+        if method:
+            order = get_order(xs, method)
+            xs = xs[torch.arange(batch_size)[:, None, None], order, torch.arange(n_dims)]
+
+        metrics = eval_batch_random(model, task_sampler, xs, xs_p)
+        all_metrics.append(metrics)
+
+    metrics = torch.cat(all_metrics, dim=0)
+
+    return aggregate_metrics(metrics)
+
 
 def collect_results(task_name, models, n_dims, n_points, order_methods=None):
     results = {}
-    for method in tqdm(order_methods):
+    for method in order_methods:
+        print(f"Running with {method}")
         metrics = {}
         for model in models:
             if method == "random":
                 metrics[model.name] = eval_model(model, task_name, n_dims, n_points, method=None)
             else:
                 metrics[model.name] = eval_model(model, task_name, n_dims, n_points, method=method)
+        results[method] = metrics
+    return results
+
+def collect_results_random(task_name, models, n_dims, n_points, order_methods=None):
+    results = {}
+    for method in order_methods:
+        print(f"Running with {method}")
+        metrics = {}
+        for model in models:
+            if method == "random":
+                metrics[model.name] = eval_model_random(model, task_name, n_dims, n_points, method=None)
+            else:
+                metrics[model.name] = eval_model_random(model, task_name, n_dims, n_points, method=method)
         results[method] = metrics
     return results
