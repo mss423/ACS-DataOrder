@@ -457,7 +457,7 @@ class XGBoostModel:
                     clf = clf.fit(train_xs, train_ys)
 
                     # test_x = xs[:, i : i + 1]
-                    test_x = xs[:, random_index : random_index + 1] 
+                    test_x = xs[j, random_index : random_index + 1] 
 
                     y_pred = clf.predict(test_x)
                     pred[j] = y_pred[0].item()
@@ -465,3 +465,8 @@ class XGBoostModel:
             preds.append(pred)
 
         return torch.stack(preds, dim=1), torch.tensor(ids)
+
+
+
+
+
