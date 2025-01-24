@@ -148,7 +148,7 @@ class LeastSquaresModel:
             pred = test_x @ ws
             preds.append(pred[:, 0, 0])
 
-        return torch.stack(preds, dim=1), ids
+        return torch.stack(preds, dim=1), torch.tensor(ids)
 
 
 class AveragingModel:
