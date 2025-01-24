@@ -52,8 +52,8 @@ def get_relevant_baselines(task_name):
         "decision_tree": [
             (LeastSquaresModel, {}),
             (NNModel, {"n_neighbors": 3}),
+            (DecisionTreeModel, {"max_depth": 2}),
             (DecisionTreeModel, {"max_depth": 4}),
-            (DecisionTreeModel, {"max_depth": None}),
             (XGBoostModel, {}),
             (AveragingModel, {}),
         ],
