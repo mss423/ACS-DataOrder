@@ -242,7 +242,7 @@ class LassoModel:
 
                     w_pred = torch.from_numpy(clf.coef_).unsqueeze(1)
 
-                    test_x = xs[:, random_index : random_index + 1] 
+                    test_x = xs[j, random_index : random_index + 1] 
                     y_pred = (test_x @ w_pred.float()).squeeze(1)
                     pred[j] = y_pred[0]
 
