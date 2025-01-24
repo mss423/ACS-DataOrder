@@ -83,6 +83,7 @@ class NNModel:
         for i in inds:
             if i == 0:
                 preds.append(torch.zeros_like(ys[:, 0]))  # predict zero for first point
+                ids.append(0)
                 continue
             train_xs, train_ys = xs[:, :i], ys[:, :i]
 
@@ -110,7 +111,7 @@ class NNModel:
                 pred.append((w * y).sum() / w.sum())
             preds.append(torch.stack(pred))
 
-        return torch.stack(preds, dim=1), random_index
+        return torch.stack(preds, dim=1), ids
 
 
 # xs and ys should be on cpu for this method. Otherwise the output maybe off in case when train_xs is not full rank due to the implementation of torch.linalg.lstsq.
@@ -164,20 +165,26 @@ class AveragingModel:
                 raise ValueError("inds contain indices where xs and ys are not defined")
 
         preds = []
+        ids  = [] # need to change this naming ...
 
         for i in inds:
             if i == 0:
                 preds.append(torch.zeros_like(ys[:, 0]))  # predict zero for first point
+                ids.append(0)
                 continue
             train_xs, train_ys = xs[:, :i], ys[:, :i]
-            test_x = xs[:, i : i + 1]
+
+            random_index = random.choice(range(i, xs.shape[1]))
+            ids.append(random_index)
+            # test_x = xs[:, i : i + 1]
+            test_x = xs[:, random_index : random_index + 1] 
 
             train_zs = train_xs * train_ys.unsqueeze(dim=-1)
             w_p = train_zs.mean(dim=1).unsqueeze(dim=-1)
             pred = test_x @ w_p
             preds.append(pred[:, 0, 0])
 
-        return torch.stack(preds, dim=1)
+        return torch.stack(preds, dim=1), torch.tensor(ids)
 
 
 # Lasso regression (for sparse linear regression).
@@ -201,11 +208,14 @@ class LassoModel:
                 raise ValueError("inds contain indices where xs and ys are not defined")
 
         preds = []  # predict one for first point
+        ids   = []
 
         # i: loop over num_points
         # j: loop over bsize
         for i in inds:
             pred = torch.zeros_like(ys[:, 0])
+            if i == 0:
+                ids.append(0)
 
             if i > 0:
                 pred = torch.zeros_like(ys[:, 0])
@@ -229,13 +239,18 @@ class LassoModel:
 
                     w_pred = torch.from_numpy(clf.coef_).unsqueeze(1)
 
-                    test_x = xs[j, i : i + 1]
+                    random_index = random.choice(range(i, xs.shape[1]))
+                    ids.append(random_index)
+                    # test_x = xs[:, i : i + 1]
+                    test_x = xs[:, random_index : random_index + 1] 
+
+
                     y_pred = (test_x @ w_pred.float()).squeeze(1)
                     pred[j] = y_pred[0]
 
             preds.append(pred)
 
-        return torch.stack(preds, dim=1)
+        return torch.stack(preds, dim=1), torch.tensor(ids)
 
 
 # Gradient Descent and variants.
@@ -280,6 +295,7 @@ class GDModel:
                 raise ValueError("inds contain indices where xs and ys are not defined")
 
         preds = []  # predict one for first point
+        ids   = []
 
         # i: loop over num_points
         for i in tqdm(inds):
@@ -288,11 +304,19 @@ class GDModel:
                 ys.shape[0], self.model_class, **self.model_class_args
             )
             model.cuda()
+
+            if i == 0:
+                ids.append(0)
+
             if i > 0:
                 pred = torch.zeros_like(ys[:, 0])
 
                 train_xs, train_ys = xs[:, :i], ys[:, :i]
-                test_xs, test_ys = xs[:, i : i + 1], ys[:, i : i + 1]
+
+                random_index = random.choice(range(i, xs.shape[1]))
+                ids.append(random_index)
+                # test_x = xs[:, i : i + 1]
+                test_xs, test_ys = xs[:, random_index : random_index + 1], ys[:, random_index : random_index + 1]
 
                 if self.opt_alg == "sgd":
                     optimizer = torch.optim.SGD(model.parameters(), lr=self.lr)
@@ -346,7 +370,7 @@ class GDModel:
 
             preds.append(pred)
 
-        return torch.stack(preds, dim=1)
+        return torch.stack(preds, dim=1), torch.tensor(ids)
 
 
 class DecisionTreeModel:
@@ -366,11 +390,14 @@ class DecisionTreeModel:
                 raise ValueError("inds contain indices where xs and ys are not defined")
 
         preds = []
+        ids   = []
 
         # i: loop over num_points
         # j: loop over bsize
         for i in inds:
             pred = torch.zeros_like(ys[:, 0])
+            if i == 0:
+                ids.append(0)
 
             if i > 0:
                 pred = torch.zeros_like(ys[:, 0])
@@ -379,13 +406,18 @@ class DecisionTreeModel:
 
                     clf = tree.DecisionTreeRegressor(max_depth=self.max_depth)
                     clf = clf.fit(train_xs, train_ys)
-                    test_x = xs[j, i : i + 1]
+
+                    random_index = random.choice(range(i, xs.shape[1]))
+                    ids.append(random_index)
+                    # test_x = xs[:, i : i + 1]
+                    test_x = xs[:, random_index : random_index + 1]
+
                     y_pred = clf.predict(test_x)
                     pred[j] = y_pred[0]
 
             preds.append(pred)
 
-        return torch.stack(preds, dim=1)
+        return torch.stack(preds, dim=1), torch.tensor(ids)
 
 
 class XGBoostModel:
@@ -404,11 +436,15 @@ class XGBoostModel:
                 raise ValueError("inds contain indices where xs and ys are not defined")
 
         preds = []
+        ids   = []
 
         # i: loop over num_points
         # j: loop over bsize
         for i in tqdm(inds):
             pred = torch.zeros_like(ys[:, 0])
+            if i == 0:
+                ids.append(0)
+
             if i > 0:
                 pred = torch.zeros_like(ys[:, 0])
                 for j in range(ys.shape[0]):
@@ -417,10 +453,15 @@ class XGBoostModel:
                     clf = xgb.XGBRegressor()
 
                     clf = clf.fit(train_xs, train_ys)
-                    test_x = xs[j, i : i + 1]
+
+                    random_index = random.choice(range(i, xs.shape[1]))
+                    ids.append(random_index)
+                    # test_x = xs[:, i : i + 1]
+                    test_x = xs[:, random_index : random_index + 1] 
+
                     y_pred = clf.predict(test_x)
                     pred[j] = y_pred[0].item()
 
             preds.append(pred)
 
-        return torch.stack(preds, dim=1)
+        return torch.stack(preds, dim=1), torch.tensor(ids)
