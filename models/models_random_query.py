@@ -409,7 +409,7 @@ class DecisionTreeModel:
                     clf = clf.fit(train_xs, train_ys)
 
                     # test_x = xs[:, i : i + 1]
-                    test_x = xs[:, random_index : random_index + 1]
+                    test_x = xs[j, random_index : random_index + 1]
 
                     y_pred = clf.predict(test_x)
                     pred[j] = y_pred[0]
@@ -446,6 +446,9 @@ class XGBoostModel:
 
             if i > 0:
                 pred = torch.zeros_like(ys[:, 0])
+                random_index = random.choice(range(i, xs.shape[1]))
+                ids.append(random_index)
+
                 for j in range(ys.shape[0]):
                     train_xs, train_ys = xs[j, :i], ys[j, :i]
 
@@ -453,8 +456,6 @@ class XGBoostModel:
 
                     clf = clf.fit(train_xs, train_ys)
 
-                    random_index = random.choice(range(i, xs.shape[1]))
-                    ids.append(random_index)
                     # test_x = xs[:, i : i + 1]
                     test_x = xs[:, random_index : random_index + 1] 
 
