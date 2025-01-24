@@ -190,7 +190,7 @@ class AveragingModel:
 # Lasso regression (for sparse linear regression).
 # Seems to take more time as we decrease alpha.
 class LassoModel:
-    def __init__(self, alpha, max_iter=5000):
+    def __init__(self, alpha, max_iter=100000):
         # the l1 regularizer gets multiplied by alpha.
         self.alpha = alpha
         self.max_iter = max_iter
@@ -399,14 +399,15 @@ class DecisionTreeModel:
 
             if i > 0:
                 pred = torch.zeros_like(ys[:, 0])
+                random_index = random.choice(range(i, xs.shape[1]))
+                ids.append(random_index)
+
                 for j in range(ys.shape[0]):
                     train_xs, train_ys = xs[j, :i], ys[j, :i]
 
                     clf = tree.DecisionTreeRegressor(max_depth=self.max_depth)
                     clf = clf.fit(train_xs, train_ys)
 
-                    random_index = random.choice(range(i, xs.shape[1]))
-                    ids.append(random_index)
                     # test_x = xs[:, i : i + 1]
                     test_x = xs[:, random_index : random_index + 1]
 

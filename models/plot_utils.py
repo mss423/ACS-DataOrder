@@ -68,7 +68,7 @@ def plot_results(metrics, normalization, trivial=1.0, xlim=None, ylim=None):
 	for line in legend.get_lines():
 		line.set_linewidth(3)
 
-def plot_results_model(results, normalization, model, trivial=1.0, xlim=None, ylim=None):
+def plot_results_model(results, normalization, model, trivial=1.0, xlim=None, ylim=None, opt=None):
 	fig, ax = plt.subplots(1,1)
 	ax.axhline(trivial, ls="--", color="gray")
 	
@@ -96,6 +96,8 @@ def plot_results_model(results, normalization, model, trivial=1.0, xlim=None, yl
 		ax.set_xlim(xlim[0], xlim[1])
 	if ylim:
 		ax.set_ylim(ylim[0], ylim[1])
+	if opt:
+		ax.axvline(opt, ls="--", color="red")
 
 	# legend = ax.legend(loc="upper left", bbox_to_anchor=(1, 1))
 	legend = ax.legend(loc="upper right", bbox_to_anchor=(1, 1)) # Modified line
