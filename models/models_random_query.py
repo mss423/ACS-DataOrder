@@ -219,6 +219,9 @@ class LassoModel:
 
             if i > 0:
                 pred = torch.zeros_like(ys[:, 0])
+                random_index = random.choice(range(i, xs.shape[1]))
+                ids.append(random_index)
+
                 for j in range(ys.shape[0]):
                     train_xs, train_ys = xs[j, :i], ys[j, :i]
 
@@ -239,12 +242,7 @@ class LassoModel:
 
                     w_pred = torch.from_numpy(clf.coef_).unsqueeze(1)
 
-                    random_index = random.choice(range(i, xs.shape[1]))
-                    ids.append(random_index)
-                    # test_x = xs[:, i : i + 1]
                     test_x = xs[:, random_index : random_index + 1] 
-
-
                     y_pred = (test_x @ w_pred.float()).squeeze(1)
                     pred[j] = y_pred[0]
 
