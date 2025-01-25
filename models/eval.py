@@ -240,7 +240,14 @@ def eval_model_random(
     return aggregate_metrics(metrics)
 
 
-def collect_results(task_name, models, n_dims, n_points, order_methods=None):
+def collect_results(
+    task_name, 
+    models, 
+    n_dims, 
+    n_points, 
+    order_methods=None
+):
+    
     results = {}
     for method in order_methods:
         print(f"Running with {method}")
@@ -253,15 +260,34 @@ def collect_results(task_name, models, n_dims, n_points, order_methods=None):
         results[method] = metrics
     return results
 
-def collect_results_random(task_name, models, n_dims, n_points, order_methods=None, batch_size=64, num_eval_examples=1280):
+def collect_results_random(
+    task_name, 
+    models, 
+    n_dims, 
+    n_points, 
+    order_methods=None, 
+    batch_size=64, 
+    num_eval_examples=1280,
+    prompting_strategy="standard"
+):
+    
     results = {}
     for method in order_methods:
         print(f"Running with {method}")
         metrics = {}
         for model in models:
             if method == "random":
-                metrics[model.name] = eval_model_random(model, task_name, n_dims, n_points, method=None, batch_size=batch_size, num_eval_examples=num_eval_examples)
+                metrics[model.name] = eval_model_random(model, task_name, n_dims, n_points, 
+                    method=None, 
+                    batch_size=batch_size, 
+                    num_eval_examples=num_eval_examples,
+                    prompting_strategy=prompting_strategy)
             else:
-                metrics[model.name] = eval_model_random(model, task_name, n_dims, n_points, method=method, batch_size=batch_size,num_eval_examples=num_eval_examples)
+                metrics[model.name] = eval_model_random(model, task_name, n_dims, n_points, 
+                    method=method, 
+                    batch_size=batch_size, 
+                    num_eval_examples=num_eval_examples,
+                    prompting_strategy=prompting_strategy)
+
         results[method] = metrics
     return results
