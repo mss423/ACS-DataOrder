@@ -122,7 +122,99 @@ def hierarchical_max_coverage_order(G: nx.Graph) -> list:
             flatten(left, covered_right)
     
     flatten(root, set())
+    print(len(ordering))
     return ordering
+
+def create_graph(data: np.ndarray, threshold: float) -> nx.Graph:
+    """
+    Build an undirected graph from 'data' based on pairwise cosine similarities.
+    Add an edge (i, j) iff the similarity >= threshold.
+    
+    :param data:       2D array (n_samples, n_features)
+    :param threshold:  Similarity threshold for edge creation
+    :return:           NetworkX Graph with edges for pairs above threshold
+    """
+    G = nx.Graph()
+    n = len(data)
+    G.add_nodes_from(range(n))  # Add all nodes
+    
+    # Compute full pairwise cosine similarity
+    sims = cosine_similarity(data)
+    
+    # Add edges where similarity >= threshold
+    for i in range(n):
+        for j in range(i + 1, n):
+            if sims[i, j] >= threshold:
+                G.add_edge(i, j)
+    
+    return G
+
+def coverage_of_node(G: nx.Graph, node: int) -> set:
+    """
+    'Coverage' of a node is the node itself plus its neighbors in G.
+    """
+    return {node} | set(G[node])  # node plus its neighbors
+
+def run_max_cover(G: nx.Graph):
+    """
+    A simple (greedy) max cover:
+      - We repeatedly pick the node whose 'coverage' (itself + neighbors)
+        covers the most *uncovered* nodes.
+      - Then we remove all those covered nodes from the pool.
+      - Continue until no uncovered nodes remain.
+    Returns a list of clusters (each cluster is a Python set of nodes).
+    """
+    uncovered = set(G.nodes())
+    clusters = []
+    
+    while uncovered:
+        best_node = None
+        best_cover_size = -1
+        best_cover = set()
+        
+        # Among uncovered nodes, pick the one whose coverage set
+        # intersects with uncovered the most
+        for node in uncovered:
+            c = coverage_of_node(G, node)
+            c_intersect = c & uncovered
+            if len(c_intersect) > best_cover_size:
+                best_cover_size = len(c_intersect)
+                best_node = node
+                best_cover = c_intersect
+        
+        # best_node yields best coverage among the uncovered
+        clusters.append(best_cover)
+        # Remove these covered nodes from the pool
+        uncovered -= best_cover
+    
+    return clusters
+
+def multi_threshold_max_cover(data: np.ndarray, thresholds: list):
+    """
+    For each threshold in descending order:
+      1) Create a graph with that threshold,
+      2) Run 'max cover' clustering,
+      3) Store/print the resulting clusters.
+    """
+    threshold_to_clusters = {}
+    for t in thresholds:
+        print(f"\n=== Threshold = {t:.2f} ===")
+        
+        # Build the graph at this threshold
+        G_t = create_graph(data, t)
+        
+        # Run the simple max cover
+        clusters = run_max_cover(G_t)
+        
+        # Display the result
+        print(f"Graph has {G_t.number_of_nodes()} nodes and {G_t.number_of_edges()} edges.")
+        print(f"Number of clusters found: {len(clusters)}")
+        for i, c in enumerate(clusters, 1):
+            print(f"  Cluster {i}: {sorted(c)}")
+        
+        threshold_to_clusters[t] = clusters
+    
+    return threshold_to_clusters
 
 # ------------------------------------------------------------------------------
 # Example usage
