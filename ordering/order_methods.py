@@ -175,7 +175,8 @@ def get_order(data, method_name):
         "acs": acs_k_cover,
         "hier_max": hierarchical_max_cover,
         "hier_acs": hierarchical_acs,
-        "hier_merge": merge_hierarchy
+        "hier_max1": alternative_1_hierarchical_order
+        "hier_max2": alternative_2_hierarchical_order
     }
 
     if method_name not in name_to_fn:
@@ -186,6 +187,15 @@ def get_order(data, method_name):
     order = []
     for i in range(data.shape[0]):
         cur_batch = np.array(data[i])
+        if method_name == "hier_max1":
+            thresholds = [1.0, 0.95, 0.9, 0.85, 0.8, 0.75, 0.7]
+            layers = multi_round_max_cover_with_reps_backlinks(cur_batch, thresholds)
+            order.append(order_fn(layers))
+            continue
+        elif method_name == "hier_max2":
+            ordder.append(order_fn(data, 0.7))
+            continue
+
         order.append(order_fn(cur_batch))
     order = torch.tensor(order, dtype=torch.int64)
     return order[:, :, None]

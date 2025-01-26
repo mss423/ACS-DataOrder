@@ -2,232 +2,289 @@ import numpy as np
 import networkx as nx
 from sklearn.metrics.pairwise import cosine_similarity
 
-def create_similarity_graph(data: np.ndarray, percentile: float = 90.0) -> nx.Graph:
-    """
-    Build an undirected graph from 'data' based on pairwise cosine similarities.
-    
-    :param data: 2D array of shape (n_samples, n_features)
-    :param percentile: The percentile of similarity above which an edge is created.
-                       For example, 90.0 means we keep edges for the top 10% of similarities.
-    :return: A NetworkX Graph where each node represents an index in 'data'
-             and an edge exists if the similarity exceeds the chosen threshold.
-    """
-    # 1) Compute the full cosine similarity matrix (n x n)
-    sims = cosine_similarity(data)  # sims[i, j] in [-1, 1] for cosine
-    
-    # 2) Determine the similarity threshold by looking at off-diagonal entries
-    #    Flatten only i<j or i>j to avoid the diagonal (which is 1.0 for each i,i).
-    n = len(data)
-    upper_tri_indices = np.triu_indices(n, k=1)  # (row indices, col indices) for i<j
-    sim_values = sims[upper_tri_indices]
-    
-    # 3) Get the cutoff similarity at the given percentile
-    cutoff = np.percentile(sim_values, percentile)
-    
-    # 4) Build the graph
-    G = nx.Graph()
-    G.add_nodes_from(range(n))  # Add all nodes first
-    
-    # 5) Add edges for pairs above the similarity cutoff
-    for (i, j), sim_val in zip(zip(upper_tri_indices[0], upper_tri_indices[1]), sim_values):
-        if sim_val >= cutoff:
-            G.add_edge(i, j)
-            
-    return G
-
-def coverage_of_cluster(G: nx.Graph, cluster_nodes: set) -> set:
-    """
-    Given a set of node indices (cluster_nodes) in Graph G,
-    return the 'covered' set: the cluster itself plus all its neighbors.
-    """
-    covered = set(cluster_nodes)
-    for u in cluster_nodes:
-        covered.update(G[u])  # neighbors of u
-    return covered
-
-def hierarchical_max_coverage_order(G: nx.Graph) -> list:
-    """
-    1) Builds a hierarchy (binary merge tree) of clusters via greedy max-coverage merges.
-    2) Flattens that hierarchy in a coverage-aware order, returning a single list of node indices.
-    """
-    # --- Step A: Initialize each node as its own cluster ---
-    clusters = [{node} for node in G.nodes()]
-    
-    # We'll store the merge tree in a dict:
-    #   merge_tree[frozenset_of_nodes] = (childA, childB)
-    # For leaves, store (None, None).
-    merge_tree = {}
-    for c in clusters:
-        merge_tree[frozenset(c)] = (None, None)  # Leaf cluster
-    
-    # --- Step B: Repeatedly merge pairs of clusters that yield the largest coverage union ---
-    while len(clusters) > 1:
-        best_pair = None
-        best_cover_size = -1
-        
-        # Naive O(n^2) search over pairs
-        for i in range(len(clusters)):
-            for j in range(i + 1, len(clusters)):
-                c1, c2 = clusters[i], clusters[j]
-                union_cluster = c1.union(c2)
-                cover = coverage_of_cluster(G, union_cluster)
-                if len(cover) > best_cover_size:
-                    best_cover_size = len(cover)
-                    best_pair = (i, j, union_cluster)
-        
-        # best_pair has (index1, index2, union_of_their_nodes)
-        i, j, union_set = best_pair
-        new_cluster = frozenset(union_set)
-        
-        # Record children in the merge tree
-        old_c1 = frozenset(clusters[i])
-        old_c2 = frozenset(clusters[j])
-        merge_tree[new_cluster] = (old_c1, old_c2)
-        
-        # Remove old clusters and add the merged one
-        for idx in sorted([i, j], reverse=True):
-            clusters.pop(idx)
-        clusters.append(set(union_set))
-    
-    # Now exactly one final cluster remains
-    root = frozenset(clusters[0])
-    
-    # --- Step C: Flatten the merge tree into a list of node indices ---
-    ordering = []
-    
-    def flatten(node: frozenset, covered_so_far: set):
-        """
-        Recursively collect nodes from 'node' in an order that picks
-        the child with the larger coverage gain first.
-        """
-        children = merge_tree[node]
-        # If leaf:
-        if children == (None, None):
-            # node is a frozenset of (likely) 1 element
-            ordering.extend(list(node))
-            return
-        
-        left, right = children
-        left_cover  = coverage_of_cluster(G, left)  - covered_so_far
-        right_cover = coverage_of_cluster(G, right) - covered_so_far
-        
-        # Decide which child first
-        if len(left_cover) >= len(right_cover):
-            flatten(left, covered_so_far)
-            covered_left = covered_so_far.union(coverage_of_cluster(G, left))
-            flatten(right, covered_left)
-        else:
-            flatten(right, covered_so_far)
-            covered_right = covered_so_far.union(coverage_of_cluster(G, right))
-            flatten(left, covered_right)
-    
-    flatten(root, set())
-    print(len(ordering))
-    return ordering
+# -------------------------------------------------------------------
+# Graph + Max Cover
+# -------------------------------------------------------------------
 
 def create_graph(data: np.ndarray, threshold: float) -> nx.Graph:
     """
-    Build an undirected graph from 'data' based on pairwise cosine similarities.
-    Add an edge (i, j) iff the similarity >= threshold.
-    
-    :param data:       2D array (n_samples, n_features)
-    :param threshold:  Similarity threshold for edge creation
-    :return:           NetworkX Graph with edges for pairs above threshold
+    Build an undirected graph among the given 'data' points.
+    Add an edge (i, j) iff cosine_similarity >= 'threshold'.
     """
-    G = nx.Graph()
     n = len(data)
-    G.add_nodes_from(range(n))  # Add all nodes
+    G = nx.Graph()
+    G.add_nodes_from(range(n))
     
-    # Compute full pairwise cosine similarity
     sims = cosine_similarity(data)
-    
-    # Add edges where similarity >= threshold
     for i in range(n):
         for j in range(i + 1, n):
             if sims[i, j] >= threshold:
                 G.add_edge(i, j)
-    
     return G
 
 def coverage_of_node(G: nx.Graph, node: int) -> set:
-    """
-    'Coverage' of a node is the node itself plus its neighbors in G.
-    """
-    return {node} | set(G[node])  # node plus its neighbors
+    """Coverage of 'node' = node plus its neighbors."""
+    return {node} | set(G[node])
 
-def run_max_cover(G: nx.Graph):
+def run_max_cover(G: nx.Graph) -> list:
     """
-    A simple (greedy) max cover:
-      - We repeatedly pick the node whose 'coverage' (itself + neighbors)
-        covers the most *uncovered* nodes.
-      - Then we remove all those covered nodes from the pool.
-      - Continue until no uncovered nodes remain.
-    Returns a list of clusters (each cluster is a Python set of nodes).
+    Greedy max cover on graph G, returning a list of clusters (sets of node indices).
+
+    Steps:
+      - While uncovered nodes exist:
+        * pick the node whose coverage intersects uncovered the most
+        * remove those covered from uncovered
+      - Return the cluster sets
     """
     uncovered = set(G.nodes())
     clusters = []
     
     while uncovered:
         best_node = None
-        best_cover_size = -1
         best_cover = set()
+        best_cover_size = -1
         
-        # Among uncovered nodes, pick the one whose coverage set
-        # intersects with uncovered the most
         for node in uncovered:
             c = coverage_of_node(G, node)
-            c_intersect = c & uncovered
-            if len(c_intersect) > best_cover_size:
-                best_cover_size = len(c_intersect)
+            c_int = c & uncovered
+            if len(c_int) > best_cover_size:
+                best_cover_size = len(c_int)
+                best_cover = c_int
                 best_node = node
-                best_cover = c_intersect
         
-        # best_node yields best coverage among the uncovered
         clusters.append(best_cover)
-        # Remove these covered nodes from the pool
         uncovered -= best_cover
     
     return clusters
 
-def multi_threshold_max_cover(data: np.ndarray, thresholds: list):
+def pick_representative(G: nx.Graph, cluster: set) -> int:
     """
-    For each threshold in descending order:
-      1) Create a graph with that threshold,
-      2) Run 'max cover' clustering,
-      3) Store/print the resulting clusters.
+    Among the 'cluster' nodes, pick a single 'representative':
+    the node with the largest coverage (tie-break by smallest ID).
     """
-    threshold_to_clusters = {}
-    for t in thresholds:
-        print(f"\n=== Threshold = {t:.2f} ===")
-        
-        # Build the graph at this threshold
-        G_t = create_graph(data, t)
-        
-        # Run the simple max cover
-        clusters = run_max_cover(G_t)
-        
-        # Display the result
-        print(f"Graph has {G_t.number_of_nodes()} nodes and {G_t.number_of_edges()} edges.")
-        print(f"Number of clusters found: {len(clusters)}")
-        for i, c in enumerate(clusters, 1):
-            print(f"  Cluster {i}: {sorted(c)}")
-        
-        threshold_to_clusters[t] = clusters
-    
-    return threshold_to_clusters
+    best_node = None
+    best_size = -1
+    for nd in cluster:
+        cov_size = len(coverage_of_node(G, nd))
+        if cov_size > best_size or (cov_size == best_size and (best_node is None or nd < best_node)):
+            best_size = cov_size
+            best_node = nd
+    return best_node
 
-# ------------------------------------------------------------------------------
-# Example usage
-# ------------------------------------------------------------------------------
+
+# -------------------------------------------------------------------
+# Data Structures for the Multi-Layer Hierarchy
+# -------------------------------------------------------------------
+
+class ClusterNode:
+    """
+    Each cluster node stores:
+      - 'members': a set of original data indices (integers).
+      - 'parent': a pointer to the cluster node in the *next* layer 
+                  that it merges into (or None if it's in the final layer).
+    """
+    def __init__(self, members):
+        self.members = members  # set of original data indices
+        self.parent = None      # link to a ClusterNode in the next layer
+
+def multi_round_max_cover_with_reps_backlinks(data: np.ndarray, thresholds: list):
+    """
+    For each threshold t in descending order:
+      1) We treat the "current_layer" as the active clusters (one node each).
+      2) Build a graph among them by computing a 'representative vector' for each cluster
+         (e.g., the centroid of its members).
+      3) Run max cover on that graph => sets of cluster-nodes that merge.
+      4) For each merged set, create a new cluster node that is the union of all 
+         child nodes' .members, and set child_node.parent = that new cluster node.
+
+    Returns a list 'layers', where layers[i] is the list of ClusterNode objects 
+    at threshold=thresholds[i], and layers[-1] is the final layer (lowest threshold).
+    """
+    n = len(data)
+    # --- Stage 0: each data point is its own cluster node
+    current_layer = []
+    for i in range(n):
+        cnode = ClusterNode(members={i})
+        current_layer.append(cnode)
+    
+    layers = []
+    
+    for idx, t in enumerate(thresholds):
+        # Build array for current layer's "representatives" to measure similarity
+        node_map = list(current_layer)   # local_index -> cluster node
+        rep_data = []
+        
+        # For each cluster node, compute a centroid of its .members in the original data
+        for cnode in node_map:
+            arr = data[list(cnode.members), :]  # sub-array
+            centroid = arr.mean(axis=0)
+            rep_data.append(centroid)
+        rep_data = np.vstack(rep_data)
+        
+        # Build graph among these cluster-node centroids
+        G_t = create_graph(rep_data, t)
+        
+        # Run max cover => merges sets of local indices
+        clusters_t = run_max_cover(G_t)
+        
+        # Build new layer of cluster nodes
+        new_layer = []
+        
+        for cset in clusters_t:
+            # Union all the original data from children
+            union_members = set()
+            for local_idx in cset:
+                union_members |= node_map[local_idx].members
+            
+            # Create the "parent" cluster node
+            parent_node = ClusterNode(members=union_members)
+            new_layer.append(parent_node)
+            
+            # Link each child node's parent to this new node
+            for local_idx in cset:
+                node_map[local_idx].parent = parent_node
+        
+        # Store the current layer (these are the clusters at threshold=t)
+        layers.append(current_layer)
+        
+        # Move on
+        current_layer = new_layer
+    
+    # Finally, store the last layer as well (the final merges, post thresholds[-1])
+    layers.append(current_layer)
+    
+    return layers
+
+
+# -------------------------------------------------------------------
+# Building a Hierarchical Ordering from the Final Layer
+# -------------------------------------------------------------------
+
+def get_children_of_node(cnode, prev_layer):
+    """
+    Among the clusters in 'prev_layer', find those whose .parent == cnode.
+    """
+    return [child for child in prev_layer if child.parent == cnode]
+
+def expand_cluster_hier(cnode, layer_index, layers):
+    """
+    Recursively expand 'cnode' by looking at the previous layer (layer_index-1),
+    finding all child clusters that point to cnode, 
+    sorting them (e.g. by size) and expanding them in a DFS or BFS manner.
+    
+    If layer_index == 0, cnode is in the first layer, so it has no children => 
+    just return the single data points in cnode.members (sorted).
+    
+    Otherwise:
+      - gather all children
+      - sort them by some criterion (like descending size)
+      - expand each child
+    """
+    if layer_index == 0:
+        # No children => just return these members sorted
+        return sorted(cnode.members)
+    
+    prev_layer = layers[layer_index - 1]
+    # Find child nodes that merged into cnode
+    children = get_children_of_node(cnode, prev_layer)
+    
+    # Sort children by descending size
+    children_sorted = sorted(children, key=lambda ch: len(ch.members), reverse=True)
+    
+    ordering = []
+    for child_node in children_sorted:
+        # Recursively expand
+        ordering.extend(expand_cluster_hier(child_node, layer_index - 1, layers))
+    
+    return ordering
+
+def alternative_1_hierarchical_order(layers):
+    """
+    A refined Alternative 1:
+      - Look at the *final layer* (layers[-1]) => top-level clusters at the lowest threshold
+      - Sort them by size (descending)
+      - For each final cluster, do a hierarchical expansion that visits its children 
+        in descending size, and so on, down to the first layer (threshold=1.0).
+      
+    Returns a single list of original data point indices in a "top-down" order.
+    """
+    if not layers:
+        return []
+    
+    final_layer = layers[-1]
+    final_idx = len(layers) - 1
+    
+    # Sort final clusters by descending size
+    final_layer_sorted = sorted(final_layer, key=lambda c: len(c.members), reverse=True)
+    
+    overall_order = []
+    for top_cnode in final_layer_sorted:
+        expanded = expand_cluster_hier(top_cnode, final_idx, layers)
+        overall_order.extend(expanded)
+    
+    return overall_order
+
+
+# -------------------------------------------------------------------
+# Alternative 2: (unchanged) disregard the hierarchy,
+#  just build a graph of all original points at final threshold
+#  and sort them by coverage.
+# -------------------------------------------------------------------
+def alternative_2_ordering_all_data(data: np.ndarray, final_thresh: float) -> list:
+    """
+    Alternative 2:
+      - Ignore the multi-layer merges.
+      - Build a graph on ALL original data at final_thresh,
+      - Rank each data point by coverage size (descending).
+    """
+    G_final = create_graph(data, final_thresh)
+    
+    coverage_list = []
+    for nd in G_final.nodes():
+        csize = len(coverage_of_node(G_final, nd))
+        coverage_list.append((nd, csize))
+    
+    # Sort descending by coverage
+    coverage_list.sort(key=lambda x: x[1], reverse=True)
+    
+    return [item[0] for item in coverage_list]
+
+
+# -------------------------------------------------------------------
+# DEMO
+# -------------------------------------------------------------------
 if __name__ == "__main__":
-    # Create a small synthetic dataset: 10 samples, 5 features
     np.random.seed(42)
-    data = np.random.rand(10, 5)
     
-    # Build a similarity graph, keep edges in top 85% similarity
-    G = create_similarity_graph(data, percentile=85.0)
-    print(f"Graph has {G.number_of_nodes()} nodes and {G.number_of_edges()} edges.")
+    # Example dataset
+    data = np.random.rand(10, 4)  # 10 points, 4 features
     
-    # Compute the hierarchical max-coverage order
-    universal_order = hierarchical_max_coverage_order(G)
-    print("Universal ordering of nodes:", universal_order)
+    thresholds = [1.0, 0.95, 0.9, 0.85, 0.8, 0.75, 0.7]
+    
+    # 1) Build multi-layer structure
+    layers = multi_round_max_cover_with_reps_backlinks(data, thresholds)
+    
+    # Print summary
+    print("\n--- Layers Summary ---")
+    for i, layer in enumerate(layers):
+        if i < len(thresholds):
+            th = thresholds[i]
+            print(f"Layer {i} (threshold={th:.2f}): #clusters={len(layer)}")
+        else:
+            print(f"Final layer (post threshold={thresholds[-1]}): #clusters={len(layer)}")
+        for idx, cnode in enumerate(layer, start=1):
+            print(f"  ClusterNode {idx}, size={len(cnode.members)}, members={sorted(cnode.members)}")
+    
+    # 2) Alternative 1: hierarchical expansion from final clusters
+    alt1_order = alternative_1_hierarchical_order(layers)
+    
+    # 3) Alternative 2: ignoring the hierarchy
+    final_t = thresholds[-1]
+    alt2_order = alternative_2_ordering_all_data(data, final_t)
+    
+    print("\n==============================================")
+    print("Alternative 1: Hierarchical Ordering from Final Layer (Largest final cluster first)")
+    print("Resulting order of all data points:", alt1_order)
+    
+    print("\nAlternative 2: All data by coverage in final graph")
+    print("Resulting order of all data points:", alt2_order)
