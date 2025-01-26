@@ -76,7 +76,7 @@ def max_cover_random(data, threshold=0.0, seed=42, max_degree=None):
     # Return the max cover and randomly permuted remainder
     return samples + remaining_indices
 
-def max_cover_pseudo(data, threshold=0.0, seed=42, max_degree=None):
+def max_cover_pseudo(data, threshold=0.5, seed=42, max_degree=None):
     # Runs max cover on graph with similarity threshold, then randomly permutes remaining data
     np.random.seed(seed)
 

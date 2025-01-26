@@ -59,7 +59,7 @@ def eval_batch_random(model, task_sampler, xs, xs_p=None):
             xs_comb = torch.cat((xs[:, :i, :], xs_p[:, i:, :]), dim=1)
             ys = task.evaluate(xs_comb)
 
-            pred, ids = model(xs_comb.to(device), ys.to(device), inds=[i]).detach()
+            pred, ids = model(xs_comb.to(device), ys.to(device), inds=[i])#.detach()
             metrics[:, i] = task.get_metric()(pred.cpu(), ys)[:, i] # test on next point in sequence
 
     return metrics
