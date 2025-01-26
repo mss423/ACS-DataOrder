@@ -4,6 +4,7 @@ import numpy as np
 import torch
 from sklearn.metrics.pairwise import cosine_similarity
 from utils import *
+from universal_order_scratch import *
 
 import matplotlib.pyplot as plt
 
@@ -158,6 +159,12 @@ def hierarchical_max_cover(data, initial_threshold=0.5, threshold_step=0.1):
 
     return selected_samples
 
+def merge_hierarchy(data):
+    G = create_similarity_graph(data, percentile=85.0)
+    
+    # Compute the hierarchical max-coverage order
+    return hierarchical_max_coverage_order(G)
+
 
 # ---------------------- #
 
@@ -167,7 +174,8 @@ def get_order(data, method_name):
         "pseudo": max_cover_pseudo,
         "acs": acs_k_cover,
         "hier_max": hierarchical_max_cover,
-        "hier_acs": hierarchical_acs
+        "hier_acs": hierarchical_acs,
+        "hier_merge": merge_hierarchy
     }
 
     if method_name not in name_to_fn:
