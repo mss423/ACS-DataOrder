@@ -226,7 +226,7 @@ def eval_model_random(
     all_metrics = []
 
     generating_func = globals()[f"gen_{prompting_strategy}"]
-    for i in range(num_eval_examples // batch_size):
+    for i in tqdm(range(num_eval_examples // batch_size)):
         xs, xs_p = generating_func(data_sampler, n_points, batch_size)
         if method:
             order = get_order(xs, method)
