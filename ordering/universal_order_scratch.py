@@ -149,16 +149,6 @@ def multi_round_max_cover_with_reps_backlinks(data: np.ndarray, thresholds: list
         
         # Move on
         current_layer = new_layer
-    
-    # Finally, store the last layer as well (the final merges, post thresholds[-1])
-    layers.append(current_layer)
-    # Print summary
-    print("\n--- Layers Summary ---")
-    for i, layer in enumerate(layers):
-        if i == len(thresholds):
-            print(f"Final layer (post threshold={thresholds[-1]}): #clusters={len(layer)}")
-        for idx, cnode in enumerate(layer, start=1):
-            print(f"  ClusterNode {idx}, size={len(cnode.members)}, members={sorted(cnode.members)}")
     return layers
 
 

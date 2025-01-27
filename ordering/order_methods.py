@@ -197,7 +197,6 @@ def get_order(data, method_name):
             continue
 
         order.append(order_fn(cur_batch))
-    print(order[-1])
     order = torch.tensor(order, dtype=torch.int64)
     return order[:, :, None]
 
