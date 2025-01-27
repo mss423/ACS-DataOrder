@@ -188,7 +188,7 @@ def get_order(data, method_name):
     for i in range(data.shape[0]):
         cur_batch = np.array(data[i])
         if method_name == "hier_max1":
-            thresholds = [1.0, 0.95, 0.9, 0.85, 0.8, 0.75, 0.7]
+            thresholds = [0.8, 0.7, 0.6, 0.5]
             layers = multi_round_max_cover_with_reps_backlinks(cur_batch, thresholds)
             order.append(order_fn(layers))
             continue
