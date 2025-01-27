@@ -61,7 +61,7 @@ def calculate_similarity_threshold(data, num_samples, coverage, cap=None, epsilo
         else:
             sim_lower = sim
         sim = (sim_upper + sim_lower) / 2
-    # print(f"Converged to tau = {sim/1000}")
+    print(f"Converged to tau = {sim/1000}")
     return sim / 1000, node_graph, samples
 
 def max_cover(graph, k):
@@ -225,7 +225,6 @@ def hierarchical_acs_tree(data, coverage=0.8, cap=None, epsilon=None, labels=Non
     Top-level function: build a hierarchical ACS tree from the entire dataset.
     """
     root = ClusterNode(indices=np.arange(len(data)))  # root covers all data
-    print(len(root.indices))
     build_hierarchy_tree(data, root, coverage, cap, epsilon, labels, sims)
     return root
 
