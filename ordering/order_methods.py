@@ -193,7 +193,7 @@ def get_order(data, method_name):
             order.append(order_fn(layers))
             continue
         elif method_name == "hier_max2":
-            ordder.append(order_fn(data, 0.7))
+            order.append(order_fn(data, 0.7))
             continue
 
         order.append(order_fn(cur_batch))
