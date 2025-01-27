@@ -65,7 +65,10 @@ def incremental_kmeans_ordering(data, Ks):
 def max_cover_order(data, threshold=0.5):
     G = create_graph(data, threshold)
     _, node_order = run_max_cover(G)
-    return node_order
+
+    all_idx = set(list(range(len(data))))
+    remaining_indices = list(all_idx - set(samples))
+    return node_order + remaining_indices
 
 def max_cover_random(data, threshold=0.0, seed=42, max_degree=None):
     # Runs max cover on graph with similarity threshold, then randomly permutes remaining data
