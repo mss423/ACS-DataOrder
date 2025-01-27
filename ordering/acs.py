@@ -220,11 +220,12 @@ def build_hierarchy_tree(data, node: ClusterNode, coverage=0.9, cap=None, epsilo
         # Recurse
         build_hierarchy_tree(data, child_node, coverage, cap, epsilon, labels, sims)
 
-def hierarchical_acs_tree(data, coverage=0.8, cap=None, epsilon=None, labels=None, sims=[707, 1000]):
+def hierarchical_acs_tree(data, coverage=0.8, cap=None, epsilon=None, labels=None, sims=[0, 1000]):
     """
     Top-level function: build a hierarchical ACS tree from the entire dataset.
     """
     root = ClusterNode(indices=np.arange(len(data)))  # root covers all data
+    print(len(root.indices))
     build_hierarchy_tree(data, root, coverage, cap, epsilon, labels, sims)
     return root
 
