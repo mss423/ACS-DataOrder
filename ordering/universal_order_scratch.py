@@ -35,12 +35,10 @@ def create_graph(data: np.ndarray, threshold: float, labels: np.ndarray = None) 
         G.add_nodes_from(labels)
     
     sims = cosine_similarity(data)
-    for i in labels:
-        for j in labels:
-            if i == j:
-                continue
+    for i in range(len(labels)):
+        for j in range(i+1, len(labels)):
             if sims[i, j] >= threshold:
-                G.add_edge(i, j)
+                G.add_edge(labels[i], labels[j])
     return G
 
 def coverage_of_node(G: nx.Graph, node: int) -> set:
@@ -103,7 +101,7 @@ def hierarchical_max_cover(data, threshold=1.0, step=0.05, lb=0.7):
         hierarchy[level] = new_level
         
         threshold -= step
-        G = create_graph(data[:, node_ids], threshold, labels=node_ids)
+        G = create_graph(data[node_ids, :], threshold, labels=node_ids)
 
     return hierarchy
 
@@ -115,3 +113,5 @@ def total_order(hierarchy):
             if node.center_id not in order:
                 order.append(node.center_id)
     return order
+
+    
