@@ -147,14 +147,12 @@ def adaptive_coverage(
         node_graph = create_graph(data, sim / 1000, labels=labels)
         clusters, samples, rem_nodes = run_max_k_cover(node_graph, num_samples)
         current_coverage = (total_num - rem_nodes) / total_num
-        print(current_coverage)
 
         if current_coverage < coverage:
             sim_upper = sim
         else:
             sim_lower = sim
         sim = (sim_upper + sim_lower) / 2
-    print(f"Converged to tau = {sim/1000}")
     return node_graph, samples, clusters
 
 class ClusterNode:
