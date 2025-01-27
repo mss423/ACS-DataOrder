@@ -153,7 +153,7 @@ def adaptive_coverage(
         else:
             sim_lower = sim
         sim = (sim_upper + sim_lower) / 2
-    # print(f"Converged to tau = {sim/1000}")
+    print(f"Converged to tau = {sim/1000}")
     return node_graph, samples, clusters
 
 class ClusterNode:
