@@ -107,3 +107,41 @@ def plot_results_model(results, normalization, model, trivial=1.0, xlim=None, yl
 	for line in legend.get_lines():
 		line.set_linewidth(3)
 
+def plot_results_baseline(results, model, xlim=None, ylim=None):
+	fig, ax = plt.subplots(1,1)
+	ax.axhline(0.0, ls="--", color="gray")
+
+	baseline = results["random"]
+	
+	color = 0
+	for order in results.keys():
+		if order == "random":
+			continue
+		metrics = results[order]
+		for name, vs in metrics.items():
+			if name != model:
+				continue
+			m_processed = {}
+			for k,v in vs.items():
+				v = [vv / b for vv, b in zip(v, baseline[name][k])]
+				m_processed[k] = v
+			ax.plot([x - 1 for x in m_processed["mean"]], "-", label=order_names(order), color=palette[color % 10], lw=2)
+			low = [x - 1 for x in m_processed["bootstrap_low"]]
+			high = [x - 1 for x in m_processed["bootstrap_high"]]
+			ax.fill_between(range(len(low)), low, high, alpha=0.3)
+			color += 1
+
+	ax.set_xlabel("# of Samples")
+	ax.set_ylabel("% Improvement over Random")
+	ax.set_xlim(-1, 40)
+	ax.set_ylim(-1, 1)
+	if xlim:
+		ax.set_xlim(xlim[0], xlim[1])
+	if ylim:
+		ax.set_ylim(ylim[0], ylim[1])
+
+	# legend = ax.legend(loc="upper left", bbox_to_anchor=(1, 1))
+	legend = ax.legend(loc="upper right", bbox_to_anchor=(1, 1)) # Modified line
+	fig.set_size_inches(8, 6)
+	for line in legend.get_lines():
+		line.set_linewidth(3)
