@@ -3,6 +3,7 @@ import numpy as np
 import random
 from scipy.spatial.distance import pdist
 from scipy.spatial.distance import squareform
+from sklearn.metrics.pairwise import cosine_similarity
 
 def build_graph(cos_sim, sim_thresh=0.0, max_degree=None, labels=None):
     G = nx.Graph()
@@ -169,7 +170,7 @@ def create_graph(data: np.ndarray, threshold: float, labels: np.ndarray = None) 
     """
     n = len(data)
     G = nx.Graph()
-    if not labels:
+    if labels is not None:
         G.add_nodes_from(range(n))
         labels = range(n)
     else:
@@ -233,7 +234,7 @@ def hierarchical_acs(data, lb=0.7):
 
         K = len(hierarchy[level-1]) // 2
         _, cur_nodes, clusters = adaptive_coverage(data[node_ids, :], K,
-            coverage=1.0,
+            coverage=0.9,
             labels=node_ids)
         new_level = []
         for cluster, node_id in zip(clusters, cur_nodes):
