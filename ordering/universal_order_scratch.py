@@ -194,7 +194,7 @@ def expand_cluster_hier(cnode, layer_index, layers):
     
     return ordering
 
-def alternative_1_hierarchical_order(layers):
+def hierarchical_flatten(layers):
     """
     A refined Alternative 1:
       - Look at the *final layer* (layers[-1]) => top-level clusters at the lowest threshold
@@ -204,21 +204,34 @@ def alternative_1_hierarchical_order(layers):
       
     Returns a single list of original data point indices in a "top-down" order.
     """
+    # if not layers:
+    #     return []
+    
+    # final_layer = layers[-1]
+    # final_idx = len(layers) - 1
+    
+    # # Sort final clusters by descending size
+    # final_layer_sorted = sorted(final_layer, key=lambda c: len(c.members), reverse=True)
+    
+    # overall_order = []
+    # for top_cnode in final_layer_sorted:
+    #     expanded = expand_cluster_hier(top_cnode, final_idx, layers)
+    #     overall_order.extend(expanded)
+    
+    # return overall_order
+
     if not layers:
         return []
-    
-    final_layer = layers[-1]
-    final_idx = len(layers) - 1
-    
-    # Sort final clusters by descending size
-    final_layer_sorted = sorted(final_layer, key=lambda c: len(c.members), reverse=True)
-    
+
     overall_order = []
-    for top_cnode in final_layer_sorted:
-        expanded = expand_cluster_hier(top_cnode, final_idx, layers)
-        overall_order.extend(expanded)
-    
+    for i in range(len(layers) - 1,-1,-1): # Iterate from final layer
+        cur_layer = layers[i]
+        cur_layer_sorted = sorted(cur_layer, key=lambda c: len(c.members), reverse=True)
+        for top_cnode in final_layer_sorted:
+            if top_cnode not in overall_order:
+                overall_order.append(top_cnode)
     return overall_order
+
 
 
 # -------------------------------------------------------------------

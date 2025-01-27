@@ -175,7 +175,7 @@ def get_order(data, method_name):
         "acs": acs_k_cover,
         "hier_max": hierarchical_max_cover,
         "hier_acs": hierarchical_acs,
-        "hier_max1": alternative_1_hierarchical_order,
+        "hier_max1": hierarchical_flatten,
         "hier_max2": alternative_2_ordering_all_data
     }
 
@@ -197,7 +197,7 @@ def get_order(data, method_name):
             continue
         elif method_name == "acs":
             print(cur_batch.shape)
-            order.append(order_fun(cur_batch, cur_batch.shape[1] * 2))
+            order.append(order_fn(cur_batch, cur_batch.shape[1] * 2))
 
         order.append(order_fn(cur_batch))
     order = torch.tensor(order, dtype=torch.int64)
