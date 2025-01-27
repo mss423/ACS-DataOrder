@@ -67,7 +67,7 @@ def max_cover_order(data, threshold=0.5):
     _, node_order = run_max_cover(G)
 
     all_idx = set(list(range(len(data))))
-    remaining_indices = list(all_idx - set(samples))
+    remaining_indices = list(all_idx - set(node_order))
     return node_order + remaining_indices
 
 def max_cover_random(data, threshold=0.0, seed=42, max_degree=None):
