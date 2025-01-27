@@ -196,7 +196,6 @@ def get_order(data, method_name):
             order.append(order_fn(hierarchy))
             continue
         elif method_name == "acs":
-            print(cur_batch.shape)
             order.append(order_fn(cur_batch, cur_batch.shape[1]))
             continue
         order.append(order_fn(cur_batch))
