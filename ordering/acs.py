@@ -108,13 +108,14 @@ def max_cover(graph, k):
 def adaptive_coverage(
     data, 
     num_samples, 
-    coverage, 
+    coverage,
+    total_num
     cap=None, 
     epsilon=None, 
     labels=None, 
-    sims=[0,1000]
+    sims=[0,1000],
 ):
-    total_num = len(data)
+    # total_num = len(data)
     if epsilon is None:
         # There is a chance that we never get close enough to "coverage" to terminate
         # the loop. I think at the very least we should have epsilon > 1/total_num.
@@ -233,7 +234,7 @@ def hierarchical_acs(data, lb=0.7):
         hierarchy[level] = {}
 
         K = len(hierarchy[level-1]) // 2
-        _, cur_nodes, clusters = adaptive_coverage(data[node_ids, :], K,
+        _, cur_nodes, clusters = adaptive_coverage(data[node_ids, :], K, len(data)
             coverage=0.9,
             labels=node_ids)
         new_level = []
