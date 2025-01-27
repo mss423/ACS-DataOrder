@@ -140,6 +140,7 @@ def get_order(data, method_name):
     order = []
     for i in range(data.shape[0]):
         cur_batch = np.array(data[i])
+        print(cur_batch.shape)
         if method_name == "hier_max":
             hierarchy = hierarchical_max_cover(cur_batch)
             order.append(order_fn(hierarchy))
