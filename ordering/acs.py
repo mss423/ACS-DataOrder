@@ -113,7 +113,7 @@ def adaptive_coverage(
     cap=None, 
     epsilon=None, 
     labels=None, 
-    sims=[0,1000],
+    sims=[707,1000],
 ):
     # total_num = len(data)
     if epsilon is None:

@@ -31,6 +31,7 @@ def max_cover_pseudo(data, threshold=0.5, seed=42, max_degree=None):
 def acs_k_cover(data, K=None):
     if K == None:
         K = data.shape[1]
+    print(K)
     # For fixed K coverage, compute optimal threshold and return K samples
     cos_sim = cosine_similarity(data)
     cos_sim = np.clip(cos_sim, -1, 1)
