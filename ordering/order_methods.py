@@ -196,7 +196,8 @@ def get_order(data, method_name):
             order.append(order_fn(cur_batch, 0.7))
             continue
         elif method_name == "acs":
-            order.append(order_fun(cur_batch, cur_batch.shape[1] // 2))
+            print(cur_batch.shape)
+            order.append(order_fun(cur_batch, cur_batch.shape[1] * 2))
 
         order.append(order_fn(cur_batch))
     order = torch.tensor(order, dtype=torch.int64)
