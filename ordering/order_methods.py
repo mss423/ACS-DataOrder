@@ -176,7 +176,7 @@ def get_order(data, method_name):
         "hier_max": hierarchical_max_cover,
         "hier_acs": hierarchical_acs,
         "hier_max1": alternative_1_hierarchical_order,
-        "hier_max2": alternative_2_hierarchical_order
+        "hier_max2": alternative_2_ordering_all_data
     }
 
     if method_name not in name_to_fn:
