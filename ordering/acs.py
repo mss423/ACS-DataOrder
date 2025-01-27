@@ -136,7 +136,6 @@ def adaptive_coverage(
     # Set sim to sim_lower to run the first iteration with sim_lower. If we
     # cannot achieve the coverage with sim_lower, then return the samples.
     sim = (sim_upper + sim_lower) / 2
-    # node_graph = build_graph(data, sim / 1000, labels=labels
     cap = (2 * total_num * coverage) / num_samples
     while abs(current_coverage - coverage) > epsilon and sim_upper - sim_lower > 1:
         if count >= max_run:
@@ -147,6 +146,7 @@ def adaptive_coverage(
         node_graph = create_graph(data, sim / 1000, labels=labels)
         clusters, samples, rem_nodes = run_max_k_cover(node_graph, num_samples)
         current_coverage = (total_num - rem_nodes) / total_num
+        print(current_coverage)
 
         if current_coverage < coverage:
             sim_upper = sim
