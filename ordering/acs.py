@@ -21,6 +21,10 @@ def build_graph(cos_sim, sim_thresh=0.0, max_degree=None, labels=None):
         G.add_edge(i, i, weight=1)
     return G
 
+def coverage_of_node(G: nx.Graph, node: int) -> set:
+    """Coverage of 'node' = node plus its neighbors."""
+    return {node} | set(G[node])
+
 def calculate_similarity_threshold(data, num_samples, coverage, cap=None, epsilon=None, labels=None, sims=[707,1000]):
     total_num = len(data)
     if epsilon is None:
@@ -28,7 +32,7 @@ def calculate_similarity_threshold(data, num_samples, coverage, cap=None, epsilo
         # the loop. I think at the very least we should have epsilon > 1/total_num.
         # So let's set set epsilon equal to the twice of the minimum possible change
         # in coverage.
-        epsilon = 5 * 10 / total_num  # Dynamic epsilon
+        epsilon = 5 * 1 / total_num  # Dynamic epsilon
 
     if coverage < num_samples / total_num:
         node_graph = build_graph(data, 1)
@@ -108,10 +112,10 @@ class ClusterNode:
         children: list of ClusterNode
             The subnodes (one child per chosen center).
     """
-    def __init__(self, indices):
+    def __init__(self, center_id, indices):
         self.indices = indices  # which rows of the *original* data are in this node
-        self.center_indices = None
-        self.children = []
+        self.center_id = center_id
+        self.children = None
 
 def assign_points_to_centers(node_graph, subset_indices, samples):
     """
@@ -171,25 +175,24 @@ def assign_points_to_centers(node_graph, subset_indices, samples):
     membership = [np.array(m) for m in membership]
     return membership
 
-def build_hierarchy_tree(data, node: ClusterNode, coverage=0.9, cap=None, epsilon=None, labels=None, sims=[0, 1000]):
+def build_hierarchy_tree(data, nodes, coverage=0.9, cap=None, epsilon=None, labels=None, sims=[0, 1000]):
     """
     Recursive function that:
       - Applies ACS to the 'node' subset (node.indices).
       - Picks half as many centers as there are points in 'node'.
       - Builds children (subclusters) and recurses.
     """
-    m = len(node.indices)
-    print(m)
+    m = len(nodes)
     if m <= 1:
         # A single point or none; no further subdivision
-        return
+        return nodes
 
     k = m // 2  # how many centers we want from this subset
     if k < 1:
-        return
+        return nodes
 
     # Gather the actual data for this subset
-    subset_data = data[node.indices]  # shape: (m, d)
+    subset_data = data[[idx for node.center_id in nodes]]  # shape: (m, d)
 
     # Run ACS on subset_data
     sim_thresh, node_graph, samples = calculate_similarity_threshold(
@@ -203,30 +206,26 @@ def build_hierarchy_tree(data, node: ClusterNode, coverage=0.9, cap=None, epsilo
     )
     # 'samples' are indices in [0..m-1] referring to 'subset_data'
     # We'll store them, but we must keep in mind these are relative to node.indices
+    new_list = []
+    for node in nodes:
+        if node.center_id in samples:
+            node.children = coverage_of_node(node_graph, node.center_id)
+            new_list.append(node)
+
     node.center_indices = samples  # store subset-based indices
 
-    # Next, figure out membership: which sub-points get assigned to each center
-    # This requires adjacency. We assume node_graph[u] = list of neighbors of u
-    membership = assign_points_to_centers(node_graph, node.indices, list(samples))
+    nodes.append(build_hierarchy_tree(data, new_list, coverage, cap, epsilon, labels, sims))
+    return nodes
 
-    # Create child nodes. Each chosen center spawns one child with all points covered by it.
-    for center_idx, member_subset_indices in enumerate(membership):
-        if len(member_subset_indices) == 0:
-            continue
-
-        child_node = ClusterNode(indices=node.indices[member_subset_indices])
-        node.children.append(child_node)
-
-        # Recurse
-        build_hierarchy_tree(data, child_node, coverage, cap, epsilon, labels, sims)
-
-def hierarchical_acs_tree(data, coverage=0.8, cap=None, epsilon=None, labels=None, sims=[0, 1000]):
+def hierarchical_acs_tree(data, coverage=0.9, cap=None, epsilon=None, labels=None, sims=[0, 1000]):
     """
     Top-level function: build a hierarchical ACS tree from the entire dataset.
     """
-    root = ClusterNode(indices=np.arange(len(data)))  # root covers all data
-    build_hierarchy_tree(data, root, coverage, cap, epsilon, labels, sims)
-    return root
+    nodes = []
+    for i in range(len(data)):
+        nodes.append(ClusterNode(center_id=i, indices=[i]))
+    hierarchy = build_hierarchy_tree(data, nodes, coverage, cap, epsilon, labels, sims)
+    return hierarchy
 
 
 def dfs_order(node: ClusterNode):

@@ -127,7 +127,7 @@ def get_order(data, method_name):
         "max_cover": max_cover_order, #max_cover_random,
         "pseudo": max_cover_pseudo,
         "acs": acs_k_cover,
-        "hier_max": build_total_order,
+        "hier_max": total_order,
         "kmeans": kmeans_order,
         "hier_acs": hierarchical_acs
     }
@@ -141,8 +141,7 @@ def get_order(data, method_name):
     for i in range(data.shape[0]):
         cur_batch = np.array(data[i])
         if method_name == "hier_max":
-            thresholds = [0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1]
-            hierarchy = hierarchical_max_cover(cur_batch, thresholds, verbose=False)
+            hierarchy = hierarchical_max_cover(cur_batch)
             order.append(order_fn(hierarchy))
             continue
         elif method_name == "acs":
