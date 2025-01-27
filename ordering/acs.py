@@ -191,6 +191,7 @@ def build_hierarchy_tree(data, node: ClusterNode, coverage=0.9, cap=None, epsilo
     subset_data = data[node.indices]  # shape: (m, d)
 
     # Run ACS on subset_data
+    print(k)
     sim_thresh, node_graph, samples = calculate_similarity_threshold(
         data=subset_data,
         num_samples=k,
