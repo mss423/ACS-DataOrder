@@ -260,7 +260,7 @@ def build_total_order(hierarchy):
     return ordering
 
 
-def kmeans_order(data: np.ndarray, n_clusters: int = None, random_state: int = 42):
+def kmeans_order(data, n_clusters=None, random_state=42):
     """
     Baseline ordering algorithm:
       1. Run k-means on the data with 'n_clusters'.
