@@ -193,8 +193,10 @@ def get_order(data, method_name):
             order.append(order_fn(layers))
             continue
         elif method_name == "hier_max2":
-            order.append(order_fn(data, 0.7))
+            order.append(order_fn(cur_batch, 0.7))
             continue
+        elif method_name == "acs":
+            order.append(order_fun(cur_batch, cur_batch.shape[1] // 2))
 
         order.append(order_fn(cur_batch))
     order = torch.tensor(order, dtype=torch.int64)
