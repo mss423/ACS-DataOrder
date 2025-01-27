@@ -1,6 +1,8 @@
 import numpy as np
 import networkx as nx
 from sklearn.metrics.pairwise import cosine_similarity
+from sklearn.cluster import KMeans
+from scipy.spatial.distance import cdist
 
 # -------------------------------------------------------------------
 # Graph + Max Cover
@@ -256,25 +258,77 @@ def build_total_order(hierarchy):
     return ordering
 
 
-# -------------------------------------------------------------------
-# Example usage
-# -------------------------------------------------------------------
-if __name__ == "__main__":
-    import numpy as np
-    np.random.seed(42)
+def kmeans_order(data: np.ndarray, n_clusters: int = None, random_state: int = 42):
+    """
+    Baseline ordering algorithm:
+      1. Run k-means on the data with 'n_clusters'.
+      2. For each cluster, pick one 'representative' data point 
+         (the one closest to the centroid).
+      3. Put these representatives first in the ordering.
+      4. Then, for the remaining points, sort them by their distance 
+         to their cluster centroid in ascending order.
+
+    :param data:         2D array, shape (n_samples, n_features).
+    :param n_clusters:   Number of clusters for k-means.
+    :param random_state: For reproducibility of k-means.
+    :return:             A list of data-point indices in the desired order.
+    """
+    n = len(data)
+    if not n_clusters:
+        n_closers = data.shape[1]
     
-    # Small dataset: 8 points in 3D
-    data = np.random.rand(8, 3)
+    # (A) Fit k-means to the entire dataset
+    kmeans = KMeans(n_clusters=n_clusters, random_state=random_state)
+    kmeans.fit(data)
+    centroids = kmeans.cluster_centers_  # shape: (k, n_features)
+    labels = kmeans.labels_              # shape: (n, )
+
+    # (B) Find the representative data point for each cluster
+    #     i.e. the one whose distance to the centroid is minimal.
+    # We can compute a (n x k) distance matrix to all centroids, or simply 
+    # filter points by their label.
     
-    # Example thresholds from 1.0 down to 0.7
-    thresholds = [1.0, 0.95, 0.9, 0.85, 0.8, 0.75, 0.7]
+    # Distances from each data point to each centroid
+    # shape = (n, k)
+    dist_matrix = cdist(data, centroids, metric='euclidean')
     
-    # Run hierarchical max cover
-    hierarchy = hierarchical_max_cover(data, thresholds, verbose=True)
+    cluster_reps = [-1] * n_clusters  # will store the index of the rep for each cluster
+    for cluster_id in range(n_clusters):
+        # Find points belonging to this cluster
+        cluster_points_idx = np.where(labels == cluster_id)[0]
+        
+        # Among these, pick the index with the smallest distance to cluster_id centroid
+        dists = dist_matrix[cluster_points_idx, cluster_id]
+        best_local_idx = np.argmin(dists)
+        
+        # actual index in the dataset
+        rep_idx = cluster_points_idx[best_local_idx]
+        
+        cluster_reps[cluster_id] = rep_idx
+
+    # (C) Build the final ordering:
+    #     Step 1: Add all cluster representatives (unique indices).
+    #             We'll do it in ascending cluster_id for consistency.
+    ordering = list(cluster_reps)
     
-    # 'hierarchy' contains a list of intermediate results
-    print("\nFinal Results:")
-    for step, info in enumerate(hierarchy, start=1):
-        print(f" Step {step}: threshold={info['threshold']}, #clusters={len(info['clusters'])}")
-        print(f"   Representatives: {info['representatives']}")
+    # (D) For the remaining points, sort them by distance to their *own* centroid.
+    #     We'll exclude the reps so we don't double-list them.
+    reps_set = set(cluster_reps)
+    
+    # Prepare a list of (point_idx, distance_to_its_cluster_centroid)
+    dist_to_centroid = []
+    for idx in range(n):
+        if idx not in reps_set:
+            c_id = labels[idx]
+            dist_val = dist_matrix[idx, c_id]
+            dist_to_centroid.append((idx, dist_val))
+    
+    # Sort by ascending distance
+    dist_to_centroid.sort(key=lambda x: x[1])
+    
+    # (E) Append these points in ascending distance
+    ordering.extend(pt_idx for (pt_idx, dist_val) in dist_to_centroid)
+    
+    return ordering
+
 

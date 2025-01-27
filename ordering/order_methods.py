@@ -62,6 +62,10 @@ def incremental_kmeans_ordering(data, Ks):
 
     return ordered_indices
 
+def max_cover_order(data, threshold=0.5):
+    G = create_graph(data, threshold)
+    return run_max_cover(G)
+
 def max_cover_random(data, threshold=0.0, seed=42, max_degree=None):
     # Runs max cover on graph with similarity threshold, then randomly permutes remaining data
     np.random.seed(seed)
@@ -164,10 +168,10 @@ def hierarchical_acs(data):
 
 def get_order(data, method_name):
     name_to_fn = {
-        "max_cover": max_cover_random,
+        "max_cover": max_cover_order, #max_cover_random,
         "pseudo": max_cover_pseudo,
         "acs": acs_k_cover,
-        "hier_max": build_total_order,
+        "hier_max": build_total_order
         #"hier_acs": hierarchical_acs,
         #"hier_max1": hierarchical_flatten,
         #"hier_max2": alternative_2_ordering_all_data
@@ -183,7 +187,7 @@ def get_order(data, method_name):
         cur_batch = np.array(data[i])
         if method_name == "hier_max":
             thresholds = [0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1]
-            hierarchy = hierarchical_max_cover(data, thresholds, verbose=False)
+            hierarchy = hierarchical_max_cover(cur_batch, thresholds, verbose=False)
             order.append(order_fn(hierarchy))
             continue
         elif method_name == "acs":
