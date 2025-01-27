@@ -234,7 +234,7 @@ def hierarchical_acs(data, lb=0.7):
         hierarchy[level] = {}
 
         K = len(hierarchy[level-1]) // 2
-        _, cur_nodes, clusters = adaptive_coverage(data[node_ids, :], K, len(data)
+        _, cur_nodes, clusters = adaptive_coverage(data[node_ids, :], K, len(data),
             coverage=0.9,
             labels=node_ids)
         new_level = []
