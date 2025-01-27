@@ -109,7 +109,7 @@ def adaptive_coverage(
     data, 
     num_samples, 
     coverage,
-    total_num
+    total_num,
     cap=None, 
     epsilon=None, 
     labels=None, 
