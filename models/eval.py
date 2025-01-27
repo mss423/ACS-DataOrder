@@ -233,7 +233,7 @@ def eval_model_random(
         if method:
             if "max_cover" in method:
                 tau = int(method[-1]) / 10.0
-                order = get_order(xs, method, threshold=tau)
+                order = get_order(xs, "max_cover", threshold=tau)
             else:
                 order = get_order(xs, method, **kwargs)
             xs = xs[torch.arange(batch_size)[:, None, None], order, torch.arange(n_dims)]
