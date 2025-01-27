@@ -227,7 +227,7 @@ def hierarchical_flatten(layers):
     for i in range(len(layers) - 1,-1,-1): # Iterate from final layer
         cur_layer = layers[i]
         cur_layer_sorted = sorted(cur_layer, key=lambda c: len(c.members), reverse=True)
-        for top_cnode in final_layer_sorted:
+        for top_cnode in cur_layer_sorted:
             if top_cnode not in overall_order:
                 overall_order.append(top_cnode)
     return overall_order
