@@ -129,7 +129,7 @@ def get_order(data, method_name, **kwargs):
         "acs": acs_k_cover,
         "hier_max": total_order,
         "kmeans": kmeans_order,
-        "hier_acs": hierarchical_acs
+        "hier_acs": total_order
     }
 
     if method_name not in name_to_fn:
@@ -142,6 +142,10 @@ def get_order(data, method_name, **kwargs):
         cur_batch = np.array(data[i])
         if method_name == "hier_max":
             hierarchy = hierarchical_max_cover(cur_batch)
+            order.append(order_fn(hierarchy))
+            continue
+        if method_name == "hier_acs":
+            hierarchy = hierarchical_acs(cur_batch)
             order.append(order_fn(hierarchy))
             continue
         order.append(order_fn(cur_batch, **kwargs))
