@@ -277,7 +277,7 @@ def kmeans_order(data, n_clusters=None, random_state=42):
     """
     n = len(data)
     if not n_clusters:
-        n_closers = data.shape[1]
+        n_clusters = data.shape[1]
     
     # (A) Fit k-means to the entire dataset
     kmeans = KMeans(n_clusters=n_clusters, random_state=random_state)
