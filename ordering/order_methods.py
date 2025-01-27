@@ -40,13 +40,6 @@ def acs_k_cover(data, K=None):
     remaining_indices = list(all_idx - set(samples))
     return samples + remaining_indices
 
-def hierarchical_acs(data):
-    # 1) Build the hierarchy
-    root = hierarchical_acs_tree(data, coverage=0.9)
-
-    # 2) Get a total ordering of original indices
-    return get_total_ordering(root)
-
 def kmeans_order(data, n_clusters=None, random_state=42):
     """
     Baseline ordering algorithm:
