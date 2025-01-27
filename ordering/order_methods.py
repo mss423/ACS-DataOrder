@@ -121,7 +121,7 @@ def hierarchical_acs(data):
 
     return selected_samples
 
-def hierarchical_max_cover(data, initial_threshold=0.5, threshold_step=0.1):
+# def hierarchical_max_cover(data, initial_threshold=0.5, threshold_step=0.1):
     """
     Performs hierarchical max cover with decreasing similarity thresholds.
 
@@ -134,36 +134,30 @@ def hierarchical_max_cover(data, initial_threshold=0.5, threshold_step=0.1):
         list: A list of indices representing the data ordering.
     """
 
-    selected_samples = []  # Initialize covered samples as an empty list
-    threshold = initial_threshold
-    cos_sim = cosine_similarity(data)
-    cos_sim = np.clip(cos_sim, -1, 1)
+    # selected_samples = []  # Initialize covered samples as an empty list
+    # threshold = initial_threshold
+    # cos_sim = cosine_similarity(data)
+    # cos_sim = np.clip(cos_sim, -1, 1)
     
-    while threshold >= 0.0 and len(selected_samples) != len(data):
-        # Build the graph for the current threshold
-        node_graph = build_graph(cos_sim, threshold) # No cap on degree for max cover
-        samples, _ = max_cover(node_graph, len(data))
-        # samples, _ = max_cover_debug(node_graph, len(data))
+    # while threshold >= 0.0 and len(selected_samples) != len(data):
+    #     # Build the graph for the current threshold
+    #     node_graph = build_graph(cos_sim, threshold) # No cap on degree for max cover
+    #     samples, _ = max_cover(node_graph, len(data))
+    #     # samples, _ = max_cover_debug(node_graph, len(data))
 
-        for s in samples:
-            if s not in selected_samples:
-                selected_samples.append(s)
+    #     for s in samples:
+    #         if s not in selected_samples:
+    #             selected_samples.append(s)
 
-        # Decrease the similarity threshold
-        threshold -= threshold_step
+    #     # Decrease the similarity threshold
+    #     threshold -= threshold_step
 
-    if len(selected_samples) < len(data):
-        all_idx = set(list(range(len(data))))
-        remaining_indices = list(all_idx - set(selected_samples))
-        return selected_samples + remaining_indices
+    # if len(selected_samples) < len(data):
+    #     all_idx = set(list(range(len(data))))
+    #     remaining_indices = list(all_idx - set(selected_samples))
+    #     return selected_samples + remaining_indices
 
-    return selected_samples
-
-def merge_hierarchy(data):
-    G = create_similarity_graph(data, percentile=85.0)
-    
-    # Compute the hierarchical max-coverage order
-    return hierarchical_max_coverage_order(G)
+    # return selected_samples
 
 
 # ---------------------- #
@@ -173,10 +167,10 @@ def get_order(data, method_name):
         "max_cover": max_cover_random,
         "pseudo": max_cover_pseudo,
         "acs": acs_k_cover,
-        "hier_max": hierarchical_max_cover,
-        "hier_acs": hierarchical_acs,
-        "hier_max1": hierarchical_flatten,
-        "hier_max2": alternative_2_ordering_all_data
+        "hier_max": build_total_order,
+        #"hier_acs": hierarchical_acs,
+        #"hier_max1": hierarchical_flatten,
+        #"hier_max2": alternative_2_ordering_all_data
     }
 
     if method_name not in name_to_fn:
@@ -187,18 +181,15 @@ def get_order(data, method_name):
     order = []
     for i in range(data.shape[0]):
         cur_batch = np.array(data[i])
-        if method_name == "hier_max1":
-            thresholds = [0.8, 0.7, 0.6, 0.5]
-            layers = multi_round_max_cover_with_reps_backlinks(cur_batch, thresholds)
-            order.append(order_fn(layers))
-            continue
-        elif method_name == "hier_max2":
-            order.append(order_fn(cur_batch, 0.7))
+        if method_name == "hier_max":
+            thresholds = [0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1]
+            hierarchy = hierarchical_max_cover(data, thresholds, verbose=False)
+            order.append(order_fn(hierarchy))
             continue
         elif method_name == "acs":
             print(cur_batch.shape)
             order.append(order_fn(cur_batch, cur_batch.shape[1] * 2))
-
+            continue
         order.append(order_fn(cur_batch))
     order = torch.tensor(order, dtype=torch.int64)
     return order[:, :, None]

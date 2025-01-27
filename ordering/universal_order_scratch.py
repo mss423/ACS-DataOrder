@@ -59,241 +59,222 @@ def run_max_cover(G: nx.Graph) -> list:
 
 def pick_representative(G: nx.Graph, cluster: set) -> int:
     """
-    Among the 'cluster' nodes, pick a single 'representative':
-    the node with the largest coverage (tie-break by smallest ID).
+    Pick a single center (representative) from 'cluster':
+    we choose the node with the largest coverage in G.
+    Ties are broken arbitrarily (or by smallest node index).
     """
     best_node = None
     best_size = -1
     for nd in cluster:
-        cov_size = len(coverage_of_node(G, nd))
-        if cov_size > best_size or (cov_size == best_size and (best_node is None or nd < best_node)):
-            best_size = cov_size
+        csize = len(coverage_of_node(G, nd))
+        if csize > best_size or (csize == best_size and (best_node is None or nd < best_node)):
+            best_size = csize
             best_node = nd
     return best_node
 
-
-# -------------------------------------------------------------------
-# Data Structures for the Multi-Layer Hierarchy
-# -------------------------------------------------------------------
-
-class ClusterNode:
+def hierarchical_max_cover(data: np.ndarray,
+                           thresholds: list,
+                           verbose: bool = True):
     """
-    Each cluster node stores:
-      - 'members': a set of original data indices (integers).
-      - 'parent': a pointer to the cluster node in the *next* layer 
-                  that it merges into (or None if it's in the final layer).
-    """
-    def __init__(self, members):
-        self.members = members  # set of original data indices
-        self.parent = None      # link to a ClusterNode in the next layer
+    Builds a hierarchical clustering in the style requested:
+    
+    Steps:
+      1) Start with threshold=1.0 on the full dataset => each point is its own cluster.
+      2) Decrease threshold, run max cover => some number of clusters.
+      3) Pick one 'center' for each cluster => only these centers remain 'active'.
+      4) Decrease threshold further, build graph on these centers, run max cover again.
+      5) Repeat until a single cluster covers all original data (or we exhaust thresholds).
 
-def multi_round_max_cover_with_reps_backlinks(data: np.ndarray, thresholds: list):
-    """
-    For each threshold t in descending order:
-      1) We treat the "current_layer" as the active clusters (one node each).
-      2) Build a graph among them by computing a 'representative vector' for each cluster
-         (e.g., the centroid of its members).
-      3) Run max cover on that graph => sets of cluster-nodes that merge.
-      4) For each merged set, create a new cluster node that is the union of all 
-         child nodes' .members, and set child_node.parent = that new cluster node.
-
-    Returns a list 'layers', where layers[i] is the list of ClusterNode objects 
-    at threshold=thresholds[i], and layers[-1] is the final layer (lowest threshold).
+    :param data:        (n_samples, n_features) array of your dataset
+    :param thresholds:  A descending list of thresholds (starting at 1.0, then 0.95, etc.)
+    :param verbose:     If True, prints out progress at each step.
+    :return: A list of dictionaries, each describing one "round":
+        [
+          {
+            'threshold': <current threshold>,
+            'clusters': [set_of_nodes, set_of_nodes, ...],  # from run_max_cover
+            'representatives': [node_index, node_index, ...],
+            'active_map': [...],  # map from active node index -> original data index
+          },
+          ...
+        ]
+        Where each 'active_map' helps track which original data points were "active" at this threshold.
     """
     n = len(data)
-    # --- Stage 0: each data point is its own cluster node
-    current_layer = []
-    for i in range(n):
-        cnode = ClusterNode(members={i})
-        current_layer.append(cnode)
     
-    layers = []
+    # Initially, the "active" set is all data points
+    # We'll keep an array that maps "active node index" -> "original data index"
+    active_map = np.arange(n)  # [0, 1, 2, ..., n-1]
     
-    for idx, t in enumerate(thresholds):
-        # Build array for current layer's "representatives" to measure similarity
-        node_map = list(current_layer)   # local_index -> cluster node
-        rep_data = []
+    results = []
+    
+    for t in thresholds:
+        # Build data array just for the active points
+        current_data = data[active_map, :]
         
-        # For each cluster node, compute a centroid of its .members in the original data
-        for cnode in node_map:
-            arr = data[list(cnode.members), :]  # sub-array
-            centroid = arr.mean(axis=0)
-            rep_data.append(centroid)
-        rep_data = np.vstack(rep_data)
+        # Create graph among these active points
+        G_t = create_graph(current_data, t)
         
-        # Build graph among these cluster-node centroids
-        G_t = create_graph(rep_data, t)
+        # Run max cover => yields clusters (each cluster is a set of local indices in [0..len(active_map)-1])
+        clusters_local = run_max_cover(G_t)
         
-        # Run max cover => merges sets of local indices
-        clusters_t = run_max_cover(G_t)
+        # Convert local indices to original data indices, if desired
+        clusters_original = []
+        for clust in clusters_local:
+            clusters_original.append({active_map[idx] for idx in clust})
         
-        # Build new layer of cluster nodes
-        new_layer = []
+        # Pick representatives for each cluster
+        new_reps = []
+        for clust in clusters_local:
+            rep_idx = pick_representative(G_t, clust)
+            new_reps.append(rep_idx)
         
-        for cset in clusters_t:
-            # Union all the original data from children
-            union_members = set()
-            for local_idx in cset:
-                union_members |= node_map[local_idx].members
-            
-            # Create the "parent" cluster node
-            parent_node = ClusterNode(members=union_members)
-            new_layer.append(parent_node)
-            
-            # Link each child node's parent to this new node
-            for local_idx in cset:
-                node_map[local_idx].parent = parent_node
+        # Convert these local rep indices to original data indices
+        new_reps_original = [active_map[r] for r in new_reps]
         
-        # Store the current layer (these are the clusters at threshold=t)
-        layers.append(current_layer)
+        # Collect results for this round
+        round_info = {
+            'threshold': t,
+            'clusters': clusters_original,
+            'representatives': new_reps_original,
+            'active_map': active_map.copy()  # copy to record the old map
+        }
+        results.append(round_info)
         
-        # Move on
-        current_layer = new_layer
-    return layers
+        if verbose:
+            print(f"\nThreshold={t:.2f}, #clusters={len(clusters_local)}")
+            print("Clusters (original indices):")
+            for i, corig in enumerate(clusters_original, start=1):
+                print(f"  Cluster {i}: {sorted(corig)}")
+            print("Chosen Representatives:", sorted(new_reps_original))
+        
+        # Check if we've ended up with just 1 cluster covering all points
+        # i.e., if it covers 'len(active_map)' active nodes. 
+        # But we also want to see if it covers the entire dataset if that is your condition:
+        # That would require checking if clusters_local is 1 cluster of size == len(active_map),
+        # AND that size is the entire dataset (?)
+        
+        # For now, let's do a simpler check: 
+        # if there's exactly 1 cluster in clusters_local, we can see if that covers all active points:
+        if len(clusters_local) == 1 and len(clusters_local[0]) == len(active_map):
+            # We have a single cluster for the active set. 
+            # If we want a single cluster for the entire original dataset, we can also check:
+            if len(active_map) == n:
+                if verbose:
+                    print("All data are covered by a single cluster. Stopping early.")
+                break
+        
+        # Update the active set to be the new reps
+        active_map = np.array(new_reps_original)
+        
+        # If there's only 1 rep left, no further merges are possible, so we can stop as well
+        if len(active_map) == 1:
+            if verbose:
+                print("Reached a single representative, stopping.")
+            break
+    
+    return results
 
+def build_total_order(hierarchy):
+    """
+    Convert the multi-round 'hierarchy' (as returned by hierarchical_max_cover)
+    into a single linear ordering of all data points.
 
-# -------------------------------------------------------------------
-# Building a Hierarchical Ordering from the Final Layer
-# -------------------------------------------------------------------
-
-def get_children_of_node(cnode, prev_layer):
+    We'll do a "top-down" pass:
+      - Start from the final round's clusters (the 'highest' level).
+      - For each cluster, find which reps in the previous round contributed to it,
+        then recursively expand those subclusters, and so on,
+        until we reach the earliest layer (likely singletons).
+    Because we discard non-representative points at each round, the clusters are not
+    strictly nested. This code attempts to track back as best as possible.
     """
-    Among the clusters in 'prev_layer', find those whose .parent == cnode.
-    """
-    return [child for child in prev_layer if child.parent == cnode]
-
-def expand_cluster_hier(cnode, layer_index, layers):
-    """
-    Recursively expand 'cnode' by looking at the previous layer (layer_index-1),
-    finding all child clusters that point to cnode, 
-    sorting them (e.g. by size) and expanding them in a DFS or BFS manner.
-    
-    If layer_index == 0, cnode is in the first layer, so it has no children => 
-    just return the single data points in cnode.members (sorted).
-    
-    Otherwise:
-      - gather all children
-      - sort them by some criterion (like descending size)
-      - expand each child
-    """
-    if layer_index == 0:
-        # No children => just return these members sorted
-        return sorted(cnode.members)
-    
-    prev_layer = layers[layer_index - 1]
-    # Find child nodes that merged into cnode
-    children = get_children_of_node(cnode, prev_layer)
-    
-    # Sort children by descending size
-    children_sorted = sorted(children, key=lambda ch: len(ch.members), reverse=True)
-    
-    ordering = []
-    for child_node in children_sorted:
-        # Recursively expand
-        ordering.extend(expand_cluster_hier(child_node, layer_index - 1, layers))
-    
-    return ordering
-
-def hierarchical_flatten(layers):
-    """
-    A refined Alternative 1:
-      - Look at the *final layer* (layers[-1]) => top-level clusters at the lowest threshold
-      - Sort them by size (descending)
-      - For each final cluster, do a hierarchical expansion that visits its children 
-        in descending size, and so on, down to the first layer (threshold=1.0).
-      
-    Returns a single list of original data point indices in a "top-down" order.
-    """
-    # if not layers:
-    #     return []
-    
-    # final_layer = layers[-1]
-    # final_idx = len(layers) - 1
-    
-    # # Sort final clusters by descending size
-    # final_layer_sorted = sorted(final_layer, key=lambda c: len(c.members), reverse=True)
-    
-    # overall_order = []
-    # for top_cnode in final_layer_sorted:
-    #     expanded = expand_cluster_hier(top_cnode, final_idx, layers)
-    #     overall_order.extend(expanded)
-    
-    # return overall_order
-
-    if not layers:
+    if not hierarchy:
         return []
 
-    overall_order = []
-    for i in range(len(layers) - 1,-1,-1): # Iterate from final layer
-        cur_layer = layers[i]
-        cur_layer_sorted = sorted(cur_layer, key=lambda c: len(c.members), reverse=True)
-        for top_cnode in cur_layer_sorted:
-            if top_cnode not in overall_order:
-                overall_order.append(top_cnode.members[0])
-    return overall_order
+    # A helper function to find which cluster(s) in 'round_info'
+    # contain a given representative r.
+    # Returns a list, since in rare cases a rep might appear in >1 cluster
+    def find_cluster_of_rep(round_info, rep):
+        # round_info['clusters'] is a list of sets of original indices
+        # We want to see which set(s) contain 'rep'.
+        found = []
+        for cset in round_info['clusters']:
+            if rep in cset:
+                found.append(cset)
+        return found
 
+    # We'll store all data points in a list, but avoid duplicates with a visited set
+    visited = set()
+    ordering = []
+
+    def expand_cluster(cluster_set, round_idx):
+        """
+        Recursively expand 'cluster_set' from the cluster in round_idx
+        to its children in round_idx - 1, if any.
+        """
+        # First, add all points from this cluster that are not yet visited
+        new_points = [p for p in sorted(cluster_set) if p not in visited]
+        ordering.extend(new_points)
+        for p in new_points:
+            visited.add(p)
+
+        if round_idx == 0:
+            # We are at the earliest round, no deeper expansions
+            return
+        
+        # Otherwise, see which reps from (round_idx - 1) contributed to this cluster.
+        # round_idx - 1 means the previous round in 'hierarchy'.
+        # The representatives for that round are in:  hierarchy[round_idx - 1]['representatives']
+        # BUT we also need to see which cluster(s) those reps came from in round_idx - 1.
+        prev_info = hierarchy[round_idx - 1]
+        prev_reps = prev_info['representatives']  # e.g. [orig_idx_1, orig_idx_2, ...]
+        
+        # We look for all reps in 'prev_reps' that appear in cluster_set
+        # Because cluster_set is made of "original data indices," if rep in cluster_set,
+        # that means it contributed to forming the cluster at round_idx.
+        reps_in_this_cluster = [r for r in prev_reps if r in cluster_set]
+
+        # For each such rep, find the actual subcluster from round_idx-1 that rep came from
+        for rep in reps_in_this_cluster:
+            child_clusters = find_cluster_of_rep(prev_info, rep)
+            # Typically 'child_clusters' should be exactly one set. If multiple, we can expand them all.
+            for child_set in child_clusters:
+                expand_cluster(child_set, round_idx - 1)
+
+    # Start from the final round
+    final_idx = len(hierarchy) - 1
+    final_info = hierarchy[final_idx]
+
+    # In the final round, we typically have a few clusters covering all data
+    # Sort them by descending size
+    final_clusters = sorted(final_info['clusters'], key=lambda s: len(s), reverse=True)
+
+    # Expand each final cluster in order
+    for cset in final_clusters:
+        expand_cluster(cset, final_idx)
+
+    return ordering
 
 
 # -------------------------------------------------------------------
-# Alternative 2: (unchanged) disregard the hierarchy,
-#  just build a graph of all original points at final threshold
-#  and sort them by coverage.
-# -------------------------------------------------------------------
-def alternative_2_ordering_all_data(data: np.ndarray, final_thresh: float) -> list:
-    """
-    Alternative 2:
-      - Ignore the multi-layer merges.
-      - Build a graph on ALL original data at final_thresh,
-      - Rank each data point by coverage size (descending).
-    """
-    G_final = create_graph(data, final_thresh)
-    
-    coverage_list = []
-    for nd in G_final.nodes():
-        csize = len(coverage_of_node(G_final, nd))
-        coverage_list.append((nd, csize))
-    
-    # Sort descending by coverage
-    coverage_list.sort(key=lambda x: x[1], reverse=True)
-    
-    return [item[0] for item in coverage_list]
-
-
-# -------------------------------------------------------------------
-# DEMO
+# Example usage
 # -------------------------------------------------------------------
 if __name__ == "__main__":
+    import numpy as np
     np.random.seed(42)
     
-    # Example dataset
-    data = np.random.rand(10, 4)  # 10 points, 4 features
+    # Small dataset: 8 points in 3D
+    data = np.random.rand(8, 3)
     
+    # Example thresholds from 1.0 down to 0.7
     thresholds = [1.0, 0.95, 0.9, 0.85, 0.8, 0.75, 0.7]
     
-    # 1) Build multi-layer structure
-    layers = multi_round_max_cover_with_reps_backlinks(data, thresholds)
+    # Run hierarchical max cover
+    hierarchy = hierarchical_max_cover(data, thresholds, verbose=True)
     
-    # Print summary
-    print("\n--- Layers Summary ---")
-    for i, layer in enumerate(layers):
-        if i < len(thresholds):
-            th = thresholds[i]
-            print(f"Layer {i} (threshold={th:.2f}): #clusters={len(layer)}")
-        else:
-            print(f"Final layer (post threshold={thresholds[-1]}): #clusters={len(layer)}")
-        for idx, cnode in enumerate(layer, start=1):
-            print(f"  ClusterNode {idx}, size={len(cnode.members)}, members={sorted(cnode.members)}")
-    
-    # 2) Alternative 1: hierarchical expansion from final clusters
-    alt1_order = alternative_1_hierarchical_order(layers)
-    
-    # 3) Alternative 2: ignoring the hierarchy
-    final_t = thresholds[-1]
-    alt2_order = alternative_2_ordering_all_data(data, final_t)
-    
-    print("\n==============================================")
-    print("Alternative 1: Hierarchical Ordering from Final Layer (Largest final cluster first)")
-    print("Resulting order of all data points:", alt1_order)
-    
-    print("\nAlternative 2: All data by coverage in final graph")
-    print("Resulting order of all data points:", alt2_order)
+    # 'hierarchy' contains a list of intermediate results
+    print("\nFinal Results:")
+    for step, info in enumerate(hierarchy, start=1):
+        print(f" Step {step}: threshold={info['threshold']}, #clusters={len(info['clusters'])}")
+        print(f"   Representatives: {info['representatives']}")
+
