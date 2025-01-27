@@ -205,7 +205,6 @@ def eval_model_random(
     num_eval_examples=1280,
     batch_size=64,
     method=None, # method of ordering data points
-    K=n_dims,
     threshold=0.5,
     data_sampler_kwargs={},
     task_sampler_kwargs={},
