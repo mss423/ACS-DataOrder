@@ -155,10 +155,7 @@ def multi_round_max_cover_with_reps_backlinks(data: np.ndarray, thresholds: list
     # Print summary
     print("\n--- Layers Summary ---")
     for i, layer in enumerate(layers):
-        if i < len(thresholds):
-            th = thresholds[i]
-            print(f"Layer {i} (threshold={th:.2f}): #clusters={len(layer)}")
-        else:
+        if i == len(thresholds):
             print(f"Final layer (post threshold={thresholds[-1]}): #clusters={len(layer)}")
         for idx, cnode in enumerate(layer, start=1):
             print(f"  ClusterNode {idx}, size={len(cnode.members)}, members={sorted(cnode.members)}")
