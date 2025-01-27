@@ -3,7 +3,7 @@ import networkx as nx
 import numpy as np
 import torch
 from sklearn.metrics.pairwise import cosine_similarity
-from utils import *
+from acs import *
 from universal_order_scratch import *
 
 import matplotlib.pyplot as plt
@@ -55,7 +55,7 @@ def get_order(data, method_name):
         "pseudo": max_cover_pseudo,
         "acs": acs_k_cover,
         "hier_max": build_total_order,
-        "kmeans": kmeans_order
+        "kmeans": kmeans_order,
         "hier_acs": hierarchical_acs
     }
 
