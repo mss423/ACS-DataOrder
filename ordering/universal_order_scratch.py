@@ -40,6 +40,7 @@ def run_max_cover(G: nx.Graph) -> list:
     """
     uncovered = set(G.nodes())
     clusters = []
+    node_ids = []
     
     while uncovered:
         best_node = None
@@ -54,10 +55,11 @@ def run_max_cover(G: nx.Graph) -> list:
                 best_cover = c_int
                 best_node = node
         
+        node_ids.append(best_node)
         clusters.append(best_cover)
         uncovered -= best_cover
     
-    return clusters
+    return clusters, node_ids
 
 def pick_representative(G: nx.Graph, cluster: set) -> int:
     """

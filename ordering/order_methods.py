@@ -64,7 +64,8 @@ def incremental_kmeans_ordering(data, Ks):
 
 def max_cover_order(data, threshold=0.5):
     G = create_graph(data, threshold)
-    return run_max_cover(G)
+    _, node_order = run_max_cover(G)
+    return node_order
 
 def max_cover_random(data, threshold=0.0, seed=42, max_degree=None):
     # Runs max cover on graph with similarity threshold, then randomly permutes remaining data
@@ -171,7 +172,8 @@ def get_order(data, method_name):
         "max_cover": max_cover_order, #max_cover_random,
         "pseudo": max_cover_pseudo,
         "acs": acs_k_cover,
-        "hier_max": build_total_order
+        "hier_max": build_total_order,
+        "kmeans": kmeans_order()
         #"hier_acs": hierarchical_acs,
         #"hier_max1": hierarchical_flatten,
         #"hier_max2": alternative_2_ordering_all_data
@@ -192,7 +194,7 @@ def get_order(data, method_name):
             continue
         elif method_name == "acs":
             print(cur_batch.shape)
-            order.append(order_fn(cur_batch, cur_batch.shape[1] * 2))
+            order.append(order_fn(cur_batch, cur_batch.shape[1]))
             continue
         order.append(order_fn(cur_batch))
     order = torch.tensor(order, dtype=torch.int64)
