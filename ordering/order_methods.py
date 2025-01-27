@@ -56,9 +56,7 @@ def get_order(data, method_name):
         "acs": acs_k_cover,
         "hier_max": build_total_order,
         "kmeans": kmeans_order
-        "hier_acs": hierarchical_acs,
-        #"hier_max1": hierarchical_flatten,
-        #"hier_max2": alternative_2_ordering_all_data
+        "hier_acs": hierarchical_acs
     }
 
     if method_name not in name_to_fn:
