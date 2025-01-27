@@ -205,8 +205,11 @@ def eval_model_random(
     num_eval_examples=1280,
     batch_size=64,
     method=None, # method of ordering data points
+    K=n_dims,
+    threshold=0.5,
     data_sampler_kwargs={},
     task_sampler_kwargs={},
+    **kwargs
 ):
     """
     Evaluate a model on a task with a variety of strategies.
@@ -229,7 +232,11 @@ def eval_model_random(
     for i in tqdm(range(num_eval_examples // batch_size)):
         xs, xs_p = generating_func(data_sampler, n_points, batch_size)
         if method:
-            order = get_order(xs, method)
+            if "max_cover" in method:
+                tau = int(method[-1]) / 10.0
+                order = get_order(xs, method, threshold=tau)
+            else:
+                order = get_order(xs, method, **kwargs)
             xs = xs[torch.arange(batch_size)[:, None, None], order, torch.arange(n_dims)]
 
         metrics = eval_batch_random(model, task_sampler, xs, xs_p)
@@ -268,7 +275,8 @@ def collect_results_random(
     order_methods=None, 
     batch_size=64, 
     num_eval_examples=1280,
-    prompting_strategy="standard"
+    prompting_strategy="standard",
+    **kwargs
 ):
     
     results = {}
@@ -281,13 +289,15 @@ def collect_results_random(
                     method=None, 
                     batch_size=batch_size, 
                     num_eval_examples=num_eval_examples,
-                    prompting_strategy=prompting_strategy)
+                    prompting_strategy=prompting_strategy,
+                    **kwargs)
             else:
                 metrics[model.name] = eval_model_random(model, task_name, n_dims, n_points, 
                     method=method, 
                     batch_size=batch_size, 
                     num_eval_examples=num_eval_examples,
-                    prompting_strategy=prompting_strategy)
+                    prompting_strategy=prompting_strategy,
+                    **kwargs)
 
         results[method] = metrics
     return results

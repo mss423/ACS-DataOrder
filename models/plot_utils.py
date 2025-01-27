@@ -36,6 +36,8 @@ def order_names(name):
     	return "ACS"
     if "max_cover" in name:
     	return "Max Coverage"
+    if "kmeans" in name:
+    	return "k Means"
 
 # Pass set of results for different models fit to a given order
 def plot_results(metrics, normalization, trivial=1.0, xlim=None, ylim=None):

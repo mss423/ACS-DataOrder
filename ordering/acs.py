@@ -25,7 +25,7 @@ def coverage_of_node(G: nx.Graph, node: int) -> set:
     """Coverage of 'node' = node plus its neighbors."""
     return {node} | set(G[node])
 
-def calculate_similarity_threshold(data, num_samples, coverage, cap=None, epsilon=None, labels=None, sims=[707,1000]):
+def calculate_similarity_threshold(data, num_samples, coverage, cap=None, epsilon=None, labels=None, sims=[0,1000]):
     total_num = len(data)
     if epsilon is None:
         # There is a chance that we never get close enough to "coverage" to terminate
@@ -65,7 +65,7 @@ def calculate_similarity_threshold(data, num_samples, coverage, cap=None, epsilo
         else:
             sim_lower = sim
         sim = (sim_upper + sim_lower) / 2
-    print(f"Converged to tau = {sim/1000}")
+    # print(f"Converged to tau = {sim/1000}")
     return sim / 1000, node_graph, samples
 
 def max_cover(graph, k):

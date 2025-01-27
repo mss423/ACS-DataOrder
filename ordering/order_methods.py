@@ -30,7 +30,7 @@ def max_cover_pseudo(data, threshold=0.5, seed=42, max_degree=None):
 
 def acs_k_cover(data, K=None):
     if K == None:
-        K = len(data) // 2
+        K = data.shape[1]
     # For fixed K coverage, compute optimal threshold and return K samples
     cos_sim = cosine_similarity(data)
     cos_sim = np.clip(cos_sim, -1, 1)
@@ -122,7 +122,7 @@ def kmeans_order(data, n_clusters=None, random_state=42):
 
 # ---------------------- #
 
-def get_order(data, method_name):
+def get_order(data, method_name, **kwargs):
     name_to_fn = {
         "max_cover": max_cover_order, #max_cover_random,
         "pseudo": max_cover_pseudo,
@@ -144,10 +144,7 @@ def get_order(data, method_name):
             hierarchy = hierarchical_max_cover(cur_batch)
             order.append(order_fn(hierarchy))
             continue
-        elif method_name == "acs":
-            order.append(order_fn(cur_batch, cur_batch.shape[1]))
-            continue
-        order.append(order_fn(cur_batch))
+        order.append(order_fn(cur_batch, **kwargs))
     order = torch.tensor(order, dtype=torch.int64)
     return order[:, :, None]
 
