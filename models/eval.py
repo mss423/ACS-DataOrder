@@ -231,11 +231,7 @@ def eval_model_random(
     for i in tqdm(range(num_eval_examples // batch_size)):
         xs, xs_p = generating_func(data_sampler, n_points, batch_size)
         if method:
-            if "max_cover" in method:
-                tau = int(method[-1]) / 10.0
-                order = get_order(xs, "max_cover", threshold=tau)
-            else:
-                order = get_order(xs, method, **kwargs)
+            order = get_order(xs, method, **kwargs)
             xs = xs[torch.arange(batch_size)[:, None, None], order, torch.arange(n_dims)]
 
         metrics = eval_batch_random(model, task_sampler, xs, xs_p)

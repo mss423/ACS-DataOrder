@@ -126,7 +126,7 @@ def get_order(data, method_name, **kwargs):
         "kmeans": kmeans_order,
         "hier_acs": total_order
     }
-    print(method_name)
+
     if "max_cover" in method_name:
         tau = float(method_name.split("=")[-1])
         method_name = "max_cover"
