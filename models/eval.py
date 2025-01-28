@@ -275,6 +275,7 @@ def collect_results_random(
     batch_size=64, 
     num_eval_examples=1280,
     prompting_strategy="standard",
+    sweep=False,
     **kwargs
 ):
     

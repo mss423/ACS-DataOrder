@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import seaborn as sns
+import re
 
 sns.set_theme("notebook", "darkgrid")
 palette = sns.color_palette("colorblind")
@@ -35,7 +36,9 @@ def order_names(name):
     if "acs" in name:
     	return "ACS"
     if "max_cover" in name:
-    	return "Max Coverage"
+    	match = re.search(r"max_cover_k=([\d.]+)", method_name)
+    	tau = float(match.groupd(1))
+    	return "Max Coverage, K = " + f"{tau}"
     if "kmeans" in name:
     	return "k Means"
 

@@ -5,6 +5,7 @@ import torch
 from sklearn.metrics.pairwise import cosine_similarity
 from acs import *
 from universal_order_scratch import *
+import re
 
 import matplotlib.pyplot as plt
 
@@ -126,7 +127,12 @@ def get_order(data, method_name, **kwargs):
         "hier_acs": total_order
     }
 
-    if method_name not in name_to_fn:
+    if "max_cover" in method_name:
+        match = re.search(r"max_cover_k=([\d.]+)", method_name)
+        tau = float(match.groupd(1))
+        method_name = "max_cover"
+
+    elif method_name not in name_to_fn:
         print("Unknown ordering method!")
         raise NotImplementedError
 
@@ -142,67 +148,8 @@ def get_order(data, method_name, **kwargs):
             hierarchy = hierarchical_acs(cur_batch)
             order.append(order_fn(hierarchy))
             continue
+        if method_name == "max_cover"
+            order.append(order_fn(cur_batch, threshold=tau))
         order.append(order_fn(cur_batch, **kwargs))
     order = torch.tensor(order, dtype=torch.int64)
     return order[:, :, None]
-
-
-# ----------------------  DEFUNCT ---------------------- #
-
-# def hierarchical_max_cover(data, initial_threshold=0.5, threshold_step=0.1):
-    """
-    Performs hierarchical max cover with decreasing similarity thresholds.
-
-    Args:
-        data (np.ndarray): The input data.
-        initial_threshold (float, optional): The initial similarity threshold. Defaults to 0.9.
-        threshold_step (float, optional): The step size for decreasing the threshold. Defaults to 0.1.
-
-    Returns:
-        list: A list of indices representing the data ordering.
-    """
-
-    # selected_samples = []  # Initialize covered samples as an empty list
-    # threshold = initial_threshold
-    # cos_sim = cosine_similarity(data)
-    # cos_sim = np.clip(cos_sim, -1, 1)
-    
-    # while threshold >= 0.0 and len(selected_samples) != len(data):
-    #     # Build the graph for the current threshold
-    #     node_graph = build_graph(cos_sim, threshold) # No cap on degree for max cover
-    #     samples, _ = max_cover(node_graph, len(data))
-    #     # samples, _ = max_cover_debug(node_graph, len(data))
-
-    #     for s in samples:
-    #         if s not in selected_samples:
-    #             selected_samples.append(s)
-
-    #     # Decrease the similarity threshold
-    #     threshold -= threshold_step
-
-    # if len(selected_samples) < len(data):
-    #     all_idx = set(list(range(len(data))))
-    #     remaining_indices = list(all_idx - set(selected_samples))
-    #     return selected_samples + remaining_indices
-
-    # return selected_samples
-
-# def hierarchical_acs(data):
-#     selected_samples = []
-#     K = len(data) // 2
-#     cos_sim = cosine_similarity(data)
-
-#     while K >= 1 and len(selected_samples) != len(data):
-#         _, _, samples = calculate_similarity_threshold(cos_sim, K, coverage=1.0, sims=[0,1000])
-#         for s in samples:
-#             if s not in selected_samples:
-#                 selected_samples.append(s)
-
-#         K = K // 2
-
-#     if len(selected_samples) < len(data):
-#         all_idx = set(list(range(len(data))))
-#         remaining_indices = list(all_idx - set(selected_samples))
-#         return selected_samples + remaining_indices
-
-#     return selected_samples
