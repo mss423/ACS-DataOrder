@@ -131,6 +131,10 @@ def get_order(data, method_name, **kwargs):
         tau = float(method_name.split("=")[-1])
         method_name = "max_cover"
 
+    elif "acs" in method_name:
+        K = float(method_name.split("=")[-1])
+        method_name = "acs"
+
     elif method_name not in name_to_fn:
         print("Unknown ordering method!")
         raise NotImplementedError
@@ -150,6 +154,19 @@ def get_order(data, method_name, **kwargs):
         if method_name == "max_cover":
             order.append(order_fn(cur_batch, threshold=tau))
             continue
+        if method_name == "acs":
+            order.append(order_fn(cur_batch, K=K))
+            continue
         order.append(order_fn(cur_batch, **kwargs))
     order = torch.tensor(order, dtype=torch.int64)
     return order[:, :, None]
+
+
+
+
+
+
+
+
+
+    

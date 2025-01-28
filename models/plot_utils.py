@@ -34,10 +34,11 @@ def order_names(name):
     if "pseudo" in name:
     	return "Pseudorandom"
     if "acs" in name:
-    	return "ACS"
+    	K = float(name.split("="[-1]))
+    	return "ACS, K = " + f"{K}"
     if "max_cover" in name:
     	tau = float(name.split("=")[-1])
-    	return "Max Coverage, \tau = " + f"{tau}"
+    	return "Max Coverage, tau = " + f"{tau}"
     if "kmeans" in name:
     	return "k Means"
 
