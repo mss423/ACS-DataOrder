@@ -72,10 +72,6 @@ def plot_results(metrics, normalization, trivial=1.0, xlim=None, ylim=None):
 	fig.set_size_inches(4, 3)
 	for line in legend.get_lines():
 		line.set_linewidth(3)
-
-def aggregate_acs(results):
-	for order in results.keys():
-		if "acs" in order:
 			
 
 def plot_results_model(results, normalization, model, trivial=1.0, xlim=None, ylim=None, opt=None):
