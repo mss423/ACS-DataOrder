@@ -132,7 +132,7 @@ def get_order(data, method_name, **kwargs):
         method_name = "max_cover"
 
     elif "acs" in method_name:
-        K = float(method_name.split("=")[-1])
+        K = int(method_name.split("=")[-1])
         method_name = "acs"
 
     elif method_name not in name_to_fn:

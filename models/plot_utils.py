@@ -34,7 +34,7 @@ def order_names(name):
     if "pseudo" in name:
     	return "Pseudorandom"
     if "acs" in name:
-    	K = float(name.split("="[-1]))
+    	K = int(name.split("="[-1]))
     	return "ACS, K = " + f"{K}"
     if "max_cover" in name:
     	tau = float(name.split("=")[-1])
