@@ -37,8 +37,8 @@ def order_names(name):
     	return "ACS"
     if "max_cover" in name:
     	match = re.search(r"max_cover_k=([\d.]+)", method_name)
-    	tau = float(match.groupd(1))
-    	return "Max Coverage, K = " + f"{tau}"
+    	tau = float(match.group(1))
+    	return "Max Coverage, \tau = " + f"{tau}"
     if "kmeans" in name:
     	return "k Means"
 

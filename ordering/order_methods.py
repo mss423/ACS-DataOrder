@@ -129,7 +129,7 @@ def get_order(data, method_name, **kwargs):
 
     if "max_cover" in method_name:
         match = re.search(r"max_cover_tau=([\d.]+)", method_name)
-        tau = float(match.groupd(1))
+        tau = float(match.group(1))
         method_name = "max_cover"
 
     elif method_name not in name_to_fn:
