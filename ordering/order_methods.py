@@ -128,7 +128,7 @@ def get_order(data, method_name, **kwargs):
     }
 
     if "max_cover" in method_name:
-        match = re.search(r"max_cover_k=([\d.]+)", method_name)
+        match = re.search(r"max_cover_tau=([\d.]+)", method_name)
         tau = float(match.groupd(1))
         method_name = "max_cover"
 
@@ -148,8 +148,9 @@ def get_order(data, method_name, **kwargs):
             hierarchy = hierarchical_acs(cur_batch)
             order.append(order_fn(hierarchy))
             continue
-        if method_name == "max_cover"
+        if method_name == "max_cover":
             order.append(order_fn(cur_batch, threshold=tau))
+            continue
         order.append(order_fn(cur_batch, **kwargs))
     order = torch.tensor(order, dtype=torch.int64)
     return order[:, :, None]
