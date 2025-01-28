@@ -296,7 +296,7 @@ class GDModel:
         ids   = []
 
         # i: loop over num_points
-        for i in tqdm(inds):
+        for i in inds: #tqdm(inds):
             pred = torch.zeros_like(ys[:, 0])
             model = ParallelNetworks(
                 ys.shape[0], self.model_class, **self.model_class_args

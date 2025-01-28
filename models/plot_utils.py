@@ -42,38 +42,6 @@ def order_names(name):
     if "kmeans" in name:
     	return "k Means"
 
-# Pass set of results for different models fit to a given order
-def plot_results(metrics, normalization, trivial=1.0, xlim=None, ylim=None):
-	fig, ax = plt.subplots(1,1)
-	ax.axhline(trivial, ls="--", color="gray")
-	
-	color = 0
-	for name, vs in metrics.items():
-		m_processed = {}
-		for k,v in vs.items():
-			v = [vv / normalization for vv in v]
-			m_processed[k] = v
-
-		ax.plot(m_processed["mean"], "-", label=baseline_names(name), color=palette[color % 10], lw=2)
-		low = m_processed["bootstrap_low"]
-		high = m_processed["bootstrap_high"]
-		ax.fill_between(range(len(low)), low, high, alpha=0.3)
-		color += 1
-	ax.set_xlabel("in-context examples")
-	ax.set_ylabel("squared error")
-	ax.set_xlim(-1, 40)
-	ax.set_ylim(-0.1, 1.25)
-	if xlim:
-		ax.set_xlim(xlim[0], xlim[1])
-	if ylim:
-		ax.set_ylim(ylim[0], ylim[1])
-
-	legend = ax.legend(loc="upper left", bbox_to_anchor=(1, 1))
-	fig.set_size_inches(4, 3)
-	for line in legend.get_lines():
-		line.set_linewidth(3)
-			
-
 def plot_results_model(results, normalization, model, trivial=1.0, xlim=None, ylim=None, opt=None):
 	fig, ax = plt.subplots(1,1)
 	ax.axhline(trivial, ls="--", color="gray")
@@ -149,3 +117,36 @@ def plot_results_baseline(results, model, xlim=None, ylim=None):
 	fig.set_size_inches(8, 6)
 	for line in legend.get_lines():
 		line.set_linewidth(3)
+
+
+# Pass set of results for different models fit to a given order
+def plot_results(metrics, normalization, trivial=1.0, xlim=None, ylim=None):
+	fig, ax = plt.subplots(1,1)
+	ax.axhline(trivial, ls="--", color="gray")
+	
+	color = 0
+	for name, vs in metrics.items():
+		m_processed = {}
+		for k,v in vs.items():
+			v = [vv / normalization for vv in v]
+			m_processed[k] = v
+
+		ax.plot(m_processed["mean"], "-", label=baseline_names(name), color=palette[color % 10], lw=2)
+		low = m_processed["bootstrap_low"]
+		high = m_processed["bootstrap_high"]
+		ax.fill_between(range(len(low)), low, high, alpha=0.3)
+		color += 1
+	ax.set_xlabel("in-context examples")
+	ax.set_ylabel("squared error")
+	ax.set_xlim(-1, 40)
+	ax.set_ylim(-0.1, 1.25)
+	if xlim:
+		ax.set_xlim(xlim[0], xlim[1])
+	if ylim:
+		ax.set_ylim(ylim[0], ylim[1])
+
+	legend = ax.legend(loc="upper left", bbox_to_anchor=(1, 1))
+	fig.set_size_inches(4, 3)
+	for line in legend.get_lines():
+		line.set_linewidth(3)
+			
