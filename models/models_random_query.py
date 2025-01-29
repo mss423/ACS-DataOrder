@@ -439,7 +439,7 @@ class XGBoostModel:
 
         # i: loop over num_points
         # j: loop over bsize
-        for i in tqdm(inds):
+        for i in inds: #tqdm(inds):
             pred = torch.zeros_like(ys[:, 0])
             if i == 0:
                 ids.append(0)
