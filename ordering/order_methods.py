@@ -29,7 +29,7 @@ def max_cover_pseudo(data, threshold=0.5, seed=42, max_degree=None):
     samples = max_cover_sampling(G, len(data))
     return samples
 
-def compute_prototypicality(xs, ys, model, num_samples=1):
+def compute_prototypicality(xs, ys, model, task_sampler, num_samples=1):
     """
     xs: tensor of shape (n, d) = embeddings
     ys: tensor of shape (n,) = integer class labels
@@ -37,8 +37,15 @@ def compute_prototypicality(xs, ys, model, num_samples=1):
     Returns:
         A dictionary mapping example index to prototypicality score (higher = more central)
     """
+    task = task_sampler()
+    if torch.cuda.is_available() and model.name.split("_")[0] in ["gpt2", "lstm"]:
+        device = "cuda"
+    else:
+        device = "cpu"
+    ys = task.evaluate(xs)
+    indices = range(ys.shape[1])
+
     N = len(xs)
-    device = xs.device
     # model.to(device)
 
     preds_all = []
@@ -49,7 +56,7 @@ def compute_prototypicality(xs, ys, model, num_samples=1):
         xi = xs[i].unsqueeze(0)  # shape (1, T)
         yi = ys[i].unsqueeze(0)
 
-        preds, indices = model(xi, yi)  # shape (1, T), (T,)
+        preds = model(xi.to(device), yi.to(device)).detach()  # shape (1, T), (T,)
         pred_vals = preds[0]
         label_vals = yi[0]
         index_vals = indices
