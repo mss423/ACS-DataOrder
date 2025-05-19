@@ -4,7 +4,7 @@ import numpy as np
 import torch
 from sklearn.metrics.pairwise import cosine_similarity
 from acs import *
-from universal_order_scratch import *
+# from universal_order_scratch import *
 import re
 
 import matplotlib.pyplot as plt
