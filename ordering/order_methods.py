@@ -128,7 +128,7 @@ def proto_order(xs, model=None, task_sampler=None, ys=None, **kwargs):
 
 def max_cover_order(data, threshold=0.5):
     G = create_graph(data, threshold)
-    _, node_order = run_max_cover(G)
+    _, node_order = run_max_k_cover(G, len(data))
 
     all_idx = set(list(range(len(data))))
     remaining_indices = list(all_idx - set(node_order))
