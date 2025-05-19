@@ -248,7 +248,7 @@ def get_order(data, method_name, **kwargs):
         cur_batch = np.array(data[i])
 
         if method_name in ["forget","proto"]:
-            order.append(order_fn(data, kwargs.get("ys", None), kwargs.get("model", None)))
+            order.append(order_fn(data, kwargs.get("ys", None), model=kwargs.get("model", None), task_sampler=kwargs.get("task_sampler", None)))
             continue
 
         if method_name == "hier_max":
