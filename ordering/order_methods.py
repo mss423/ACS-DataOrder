@@ -256,8 +256,11 @@ def get_order(data, method_name, **kwargs):
     for i in range(data.shape[0]):
         cur_batch = np.array(data[i])
 
-        if method_name in ["forget","proto"]:
+        if method_name in "proto":
             order.append(order_fn(data, ys=kwargs.get("ys", None), model=kwargs.get("model", None), task_sampler=kwargs.get("task_sampler", None)))
+            continue
+        if method_name == "forget"
+            order.append(order_fn(data, ys=kwargs.get("ys", None), model=kwargs.get("model", None)))
             continue
 
         if method_name == "hier_max":
