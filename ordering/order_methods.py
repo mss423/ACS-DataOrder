@@ -39,7 +39,7 @@ def compute_prototypicality(xs, ys, model, num_samples=1):
     """
     N = len(xs)
     device = xs.device
-    model.to(device)
+    # model.to(device)
 
     preds_all = []
     labels_all = []
