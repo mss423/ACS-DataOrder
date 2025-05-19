@@ -29,6 +29,83 @@ def max_cover_pseudo(data, threshold=0.5, seed=42, max_degree=None):
     samples = max_cover_sampling(G, len(data))
     return samples
 
+def compute_prototypicality(xs, ys):
+    """
+    xs: tensor of shape (n, d) = embeddings
+    ys: tensor of shape (n,) = integer class labels
+
+    Returns:
+        A dictionary mapping example index to prototypicality score (higher = more central)
+    """
+    device = xs.device
+    unique_labels = torch.unique(ys)
+    
+    # Step 1: Compute centroids for each class
+    centroids = {}
+    for label in unique_labels:
+        mask = ys == label
+        class_embeddings = xs[mask]
+        centroids[label.item()] = class_embeddings.mean(dim=0)
+
+    # Step 2: Compute distance to class centroid for each example
+    prototypicality_scores = {}
+    for i in range(xs.shape[0]):
+        label = ys[i].item()
+        centroid = centroids[label]
+        distance = torch.norm(xs[i] - centroid, p=2).item()
+        prototypicality_scores[i] = -distance  # negative = more central
+    ordering = sorted(prototypicality_scores, key=prototypicality_scores.get, reverse=True)
+    return ordering
+
+def compute_forgetting_scores(xs, ys, model, batch_size=32, num_epochs=5):
+    """
+    xs: dictionary of input tensors (e.g., input_ids, attention_mask)
+        Each tensor is of shape (n_samples, seq_len)
+    ys: tensor of shape (n_samples,) — class labels
+    model: a classification model like BertForSequenceClassification
+    Returns:
+        dict mapping example index to forgetting score
+    """
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model.to(device)
+    
+    n = ys.shape[0]
+    indices = torch.arange(n)
+    example_correct = defaultdict(list)
+
+    for epoch in range(num_epochs):
+        print(f"Epoch {epoch+1}/{num_epochs}")
+
+        # Shuffle for each epoch
+        perm = torch.randperm(n)
+        xs_shuffled = {k: v[perm] for k, v in xs.items()}
+        ys_shuffled = ys[perm]
+        indices_shuffled = indices[perm]
+
+        # Mini-batch loop
+        for i in range(0, n, batch_size):
+            batch_slice = slice(i, i + batch_size)
+            batch_inputs = {k: v[batch_slice].to(device) for k, v in xs_shuffled.items()}
+            batch_labels = ys_shuffled[batch_slice].to(device)
+            batch_indices = indices_shuffled[batch_slice]
+
+            model.train()
+            outputs = model(**batch_inputs)
+            preds = torch.argmax(outputs.logits, dim=1)
+            correct = (preds == batch_labels).detach().cpu()
+
+            for idx, is_correct in zip(batch_indices, correct):
+                example_correct[idx.item()].append(is_correct.item())
+
+    # Compute forgetting scores: count transitions from 1 → 0
+    forgetting_scores = {}
+    for idx, history in example_correct.items():
+        forgets = sum((history[i] == 1 and history[i+1] == 0) for i in range(len(history)-1))
+        forgetting_scores[idx] = forgets
+    ordering = sorted(forgetting_scores, key=forgetting_scores.get, reverse=True)
+    return ordering
+
+
 def acs_k_cover(data, K=None):
     if K == None:
         K = data.shape[1]
@@ -121,16 +198,16 @@ def get_order(data, method_name, **kwargs):
         "max_cover": max_cover_order, #max_cover_random,
         "pseudo": max_cover_pseudo,
         "acs": acs_k_cover,
-        "hier_max": total_order,
         "kmeans": kmeans_order,
-        "hier_acs": total_order
+        "forget": compute_forgetting_scores,
+        "proto": compute_prototypicality
     }
 
     if "max_cover" in method_name:
         tau = float(method_name.split("=")[-1])
         method_name = "max_cover"
 
-    elif "acs" in method_name and method_name != "hier_acs":
+    elif "acs" in method_name:
         K = int(method_name.split("=")[-1])
         method_name = "acs"
 
@@ -142,6 +219,14 @@ def get_order(data, method_name, **kwargs):
     order = []
     for i in range(data.shape[0]):
         cur_batch = np.array(data[i])
+
+        if method_name == "forget":
+            order.append(order_fn(data, kwargs.get("ys", None), kwargs.get("model", None)))
+            continue
+        elif method_name == "proto":
+            order.append(order_fn(data, kwargs.get(ys,None)))
+            continue
+
         if method_name == "hier_max":
             hierarchy = hierarchical_max_cover(cur_batch)
             order.append(order_fn(hierarchy))

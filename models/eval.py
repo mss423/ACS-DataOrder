@@ -185,6 +185,10 @@ def eval_model(
     for i in range(num_eval_examples // batch_size):
         xs, xs_p = generating_func(data_sampler, n_points, batch_size)
         if method:
+            if method == "proto":
+                order = get_order(xs, ys=xs_p)
+            elif method == "forget":
+                order = get_order(xs, ys=xs_p, model=model)
             order = get_order(xs, method)
             xs = xs[torch.arange(batch_size)[:, None, None], order, torch.arange(n_dims)]
 
