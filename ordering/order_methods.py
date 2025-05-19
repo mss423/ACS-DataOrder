@@ -35,7 +35,7 @@ def forgetting_order(xs, ys, model, task_sampler=None, num_epochs=5, threshold=0
     example_correct = defaultdict(list)
 
     for epoch in range(num_epochs):
-        print(f"Epoch {epoch + 1}/{num_epochs}")
+        # print(f"Epoch {epoch + 1}/{num_epochs}")
         for i in range(B):
             xi = xs[i].unsqueeze(0).to(device)
             yi = ys[i].unsqueeze(0).to(device)
