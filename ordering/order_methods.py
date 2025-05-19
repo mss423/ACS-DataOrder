@@ -96,7 +96,7 @@ def compute_forgetting_scores(xs, ys, model, batch_size=32, num_epochs=5):
     Returns:
         dict mapping example index to forgetting score
     """
-    N, T = xs.shape
+    N = len(data)
     device = xs.device
     example_correct = defaultdict(list)
 
@@ -121,7 +121,7 @@ def compute_forgetting_scores(xs, ys, model, batch_size=32, num_epochs=5):
     for idx, history in example_correct.items():
         forgets = sum((history[i] == 1 and history[i+1] == 0) for i in range(len(history)-1))
         forgetting_scores[idx] = forgets
-        
+
     ordering = sorted(forgetting_scores, key=forgetting_scores.get, reverse=True)
     return ordering
 
