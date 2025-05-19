@@ -37,7 +37,7 @@ def compute_prototypicality(xs, ys):
     Returns:
         A dictionary mapping example index to prototypicality score (higher = more central)
     """
-    N, T = xs.shape
+    N = len(data)
     device = xs.device
     model.to(device)
 
@@ -240,11 +240,8 @@ def get_order(data, method_name, **kwargs):
     for i in range(data.shape[0]):
         cur_batch = np.array(data[i])
 
-        if method_name == "forget":
+        if method_name in ["forget","proto"]:
             order.append(order_fn(data, kwargs.get("ys", None), kwargs.get("model", None)))
-            continue
-        elif method_name == "proto":
-            order.append(order_fn(data, kwargs.get('ys', None)))
             continue
 
         if method_name == "hier_max":
