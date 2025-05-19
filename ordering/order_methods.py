@@ -21,7 +21,7 @@ def proto_order(xs, model=None, task_sampler=None, ys=None, **kwargs):
     assert model is not None and task_sampler is not None
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    model.to(device)
+    # model.to(device)
     B, T, D = xs.shape
 
     task = task_sampler()
