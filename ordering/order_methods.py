@@ -37,7 +37,7 @@ def compute_prototypicality(xs, ys, model, num_samples=1):
     Returns:
         A dictionary mapping example index to prototypicality score (higher = more central)
     """
-    N = len(data)
+    N = len(xs)
     device = xs.device
     model.to(device)
 
@@ -96,7 +96,7 @@ def compute_forgetting_scores(xs, ys, model, batch_size=32, num_epochs=5):
     Returns:
         dict mapping example index to forgetting score
     """
-    N = len(data)
+    N = len(xs)
     device = xs.device
     example_correct = defaultdict(list)
 
