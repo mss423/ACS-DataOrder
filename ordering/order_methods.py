@@ -29,7 +29,7 @@ def max_cover_pseudo(data, threshold=0.5, seed=42, max_degree=None):
     samples = max_cover_sampling(G, len(data))
     return samples
 
-def compute_prototypicality(xs, ys):
+def compute_prototypicality(xs, ys, model, num_samples=1):
     """
     xs: tensor of shape (n, d) = embeddings
     ys: tensor of shape (n,) = integer class labels
