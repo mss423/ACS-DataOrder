@@ -61,7 +61,7 @@ def compute_prototypicality(xs, ys, model, task_sampler, num_samples=1):
         label_vals = yi[0]
         index_vals = list(indices)
 
-        for t, p, y in zip(index_vals.tolist(), pred_vals.tolist(), label_vals.tolist()):
+        for t, p, y in zip(index_vals.tolist(), pred_vals.tolist(), label_vals):
             preds_all.append(p)
             labels_all.append(int(y))
             ids_all.append(i)
