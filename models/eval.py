@@ -237,7 +237,8 @@ def eval_model_random(
         if method:
             if method in ["proto", "forget"]:
                 order = get_order(xs, method, ys=xs_p, model=model, task_sampler=task_sampler)
-            order = get_order(xs, method, **kwargs)
+            else:
+                order = get_order(xs, method, **kwargs)
             xs = xs[torch.arange(batch_size)[:, None, None], order, torch.arange(n_dims)]
 
         metrics = eval_batch_random(model, task_sampler, xs, xs_p)
