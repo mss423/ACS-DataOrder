@@ -181,8 +181,7 @@ def get_order(data, method_name, **kwargs):
         "pseudo": max_cover_pseudo,
         "acs": acs_k_cover,
         "kmeans": kmeans_order,
-        "forget": compute_forgetting_scores,
-        "proto": compute_prototypicality
+        "proto": proto_order
     }
 
     if "max_cover" in method_name:
