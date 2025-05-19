@@ -41,6 +41,10 @@ def order_names(name):
     	return "Max Coverage, tau = " + f"{tau}"
     if "kmeans" in name:
     	return "k Means"
+    if "proto" in name:
+    	return "Prototypicality"
+    if "forget" in name:
+    	return "Forgetting"
 
 def plot_results_model(results, normalization, model, trivial=1.0, xlim=None, ylim=None, opt=None):
 	fig, ax = plt.subplots(1,1)
