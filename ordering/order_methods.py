@@ -9,7 +9,7 @@ import re
 
 import matplotlib.pyplot as plt
 
-def forgetting_order(xs, ys, model, task_sampler=None, num_epochs=5, threshold=0.5):
+def forgetting_order(xs, ys, model, task_sampler=None, num_epochs=1, threshold=0.5):
     """
     Computes forgetting scores for each example.
 
