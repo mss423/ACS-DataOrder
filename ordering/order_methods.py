@@ -259,7 +259,7 @@ def get_order(data, method_name, **kwargs):
         if method_name in "proto":
             order.append(order_fn(data, ys=kwargs.get("ys", None), model=kwargs.get("model", None), task_sampler=kwargs.get("task_sampler", None)))
             continue
-        if method_name == "forget"
+        if method_name == "forget":
             order.append(order_fn(data, ys=kwargs.get("ys", None), model=kwargs.get("model", None)))
             continue
 
