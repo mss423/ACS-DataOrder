@@ -9,6 +9,65 @@ import re
 
 import matplotlib.pyplot as plt
 
+def proto_order(xs, model=None, task_sampler=None, ys=None, **kwargs):
+    """
+    Computes prototypicality-based ordering using prediction distances from class centroids.
+
+    xs: tensor (B, T, D)
+    model: model with __call__(xs[i], ys[i], inds=[t]) → prediction at t
+    task_sampler: provides .evaluate(xs) → ys
+    ys: optional (B, T) ground truth
+    """
+    assert model is not None and task_sampler is not None
+
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    model.to(device)
+    B, T, D = xs.shape
+
+    task = task_sampler()
+    if ys is None:
+        ys = task.evaluate(xs)
+
+    preds_all = []
+    labels_all = []
+    example_ids = []
+
+    for i in range(B):
+        xi = xs[i].unsqueeze(0)  # (1, T, D)
+        yi = ys[i].unsqueeze(0)  # (1, T)
+
+        for t in range(1, T):  # skip t=0 since it's usually used for training
+            pred = model(xi.to(device), yi.to(device), inds=[t])
+            preds_all.append(pred.item())
+            labels_all.append(int(yi[0, t].item()))
+            example_ids.append(i)
+
+    # Compute class centroids in prediction space
+    import numpy as np
+    preds_all = np.array(preds_all)
+    labels_all = np.array(labels_all)
+    example_ids = np.array(example_ids)
+
+    centroids = {}
+    for label in np.unique(labels_all):
+        centroids[label] = preds_all[labels_all == label].mean()
+
+    # Compute distances from centroid per example
+    from collections import defaultdict
+    score_sum = defaultdict(float)
+    score_count = defaultdict(int)
+
+    for i, pred, label in zip(example_ids, preds_all, labels_all):
+        dist = abs(pred - centroids[label])
+        score_sum[i] += dist
+        score_count[i] += 1
+
+    # Negative average distance = prototypicality score
+    proto_scores = {i: -score_sum[i] / score_count[i] for i in score_sum}
+    ordering = sorted(proto_scores, key=proto_scores.get, reverse=True)
+    return ordering
+
+
 def max_cover_order(data, threshold=0.5):
     G = create_graph(data, threshold)
     _, node_order = run_max_cover(G)
@@ -28,111 +87,6 @@ def max_cover_pseudo(data, threshold=0.5, seed=42, max_degree=None):
     
     samples = max_cover_sampling(G, len(data))
     return samples
-
-def compute_prototypicality(xs, ys, model, task_sampler, num_samples=1):
-    """
-    xs: tensor of shape (n, d) = embeddings
-    ys: tensor of shape (n,) = integer class labels
-
-    Returns:
-        A dictionary mapping example index to prototypicality score (higher = more central)
-    """
-    task = task_sampler()
-    if torch.cuda.is_available() and model.name.split("_")[0] in ["gpt2", "lstm"]:
-        device = "cuda"
-    else:
-        device = "cpu"
-    ys = task.evaluate(xs)
-
-    N = len(xs)
-    # model.to(device)
-
-    preds_all = []
-    labels_all = []
-    ids_all = []
-
-    for i in range(N):
-        xi = xs[i].unsqueeze(0)  # shape (1, T)
-        yi = ys[i].unsqueeze(0)
-
-        preds = model(xi, yi) # model(xi.to(device), yi.to(device)).detach()  # shape (1, T), (T,)
-        indices = range(yi.shape[1])
-        pred_vals = preds[0]
-        label_vals = yi[0]
-        index_vals = list(indices)
-
-        for t, p, y in zip(index_vals, pred_vals.tolist(), label_vals.tolist()):
-            preds_all.append(p)
-            labels_all.append(int(y))
-            ids_all.append(i)
-
-    # Step 2: Compute class centroids
-    import numpy as np
-    preds_all = np.array(preds_all)
-    labels_all = np.array(labels_all)
-    ids_all = np.array(ids_all)
-
-    centroids = {}
-    for label in np.unique(labels_all):
-        centroids[label] = preds_all[labels_all == label].mean()
-
-    # Step 3: Compute distance to class centroid
-    score_sums = {}
-    score_counts = {}
-
-    for i, pred, label in zip(ids_all, preds_all, labels_all):
-        dist = abs(pred - centroids[label])
-        if i not in score_sums:
-            score_sums[i] = 0.0
-            score_counts[i] = 0
-        score_sums[i] += dist
-        score_counts[i] += 1
-
-    # Step 4: Convert to average negative distance (more central = higher score)
-    prototypicality_scores = {i: -score_sums[i] / score_counts[i] for i in score_sums}
-    print(prototypicality_scores)
-    
-    ordering = sorted(prototypicality_scores, key=prototypicality_scores.get, reverse=True)
-    return ordering
-
-def compute_forgetting_scores(xs, ys, model, batch_size=32, num_epochs=5):
-    """
-    xs: dictionary of input tensors (e.g., input_ids, attention_mask)
-        Each tensor is of shape (n_samples, seq_len)
-    ys: tensor of shape (n_samples,) — class labels
-    model: a classification model like BertForSequenceClassification
-    Returns:
-        dict mapping example index to forgetting score
-    """
-    N = len(xs)
-    device = xs.device
-    example_correct = defaultdict(list)
-
-    for epoch in range(num_epochs):
-        print(f"Epoch {epoch + 1}/{num_epochs}")
-        for i in range(N):
-            xi = xs[i].unsqueeze(0)  # shape (1, T)
-            yi = ys[i].unsqueeze(0)  # shape (1, T)
-
-            preds, indices = model(xi, yi)  # preds: shape (1, T), indices: (T,)
-
-            # For each prediction index, check correctness
-            pred_row = preds[0]  # shape (T,)
-            true_row = yi[0]     # shape (T,)
-
-            for t, p in zip(indices.tolist(), pred_row.tolist()):
-                is_correct = (round(p) == int(true_row[t]))  # round to 0/1 if binary
-                example_correct[i].append(is_correct)
-
-    # Count forgetting events: transitions from 1 → 0
-    forgetting_scores = {}
-    for idx, history in example_correct.items():
-        forgets = sum((history[i] == 1 and history[i+1] == 0) for i in range(len(history)-1))
-        forgetting_scores[idx] = forgets
-
-    ordering = sorted(forgetting_scores, key=forgetting_scores.get, reverse=True)
-    return ordering
-
 
 def acs_k_cover(data, K=None):
     if K == None:
