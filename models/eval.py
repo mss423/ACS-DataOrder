@@ -235,6 +235,8 @@ def eval_model_random(
     for i in tqdm(range(num_eval_examples // batch_size)):
         xs, xs_p = generating_func(data_sampler, n_points, batch_size)
         if method:
+            if method in ["proto", "forget"]:
+                order = get_order(xs, ys=xs_p, model=model)
             order = get_order(xs, method, **kwargs)
             xs = xs[torch.arange(batch_size)[:, None, None], order, torch.arange(n_dims)]
 
