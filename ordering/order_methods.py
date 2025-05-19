@@ -43,7 +43,6 @@ def compute_prototypicality(xs, ys, model, task_sampler, num_samples=1):
     else:
         device = "cpu"
     ys = task.evaluate(xs)
-    indices = range(ys.shape[1])
 
     N = len(xs)
     # model.to(device)
@@ -56,7 +55,8 @@ def compute_prototypicality(xs, ys, model, task_sampler, num_samples=1):
         xi = xs[i].unsqueeze(0)  # shape (1, T)
         yi = ys[i].unsqueeze(0)
 
-        preds = model(xi.to(device), yi.to(device)).detach()  # shape (1, T), (T,)
+        preds = model(xi, yi) # model(xi.to(device), yi.to(device)).detach()  # shape (1, T), (T,)
+        indices = range(yi.shape[1])
         pred_vals = preds[0]
         label_vals = yi[0]
         index_vals = indices
