@@ -90,6 +90,7 @@ def compute_prototypicality(xs, ys, model, task_sampler, num_samples=1):
 
     # Step 4: Convert to average negative distance (more central = higher score)
     prototypicality_scores = {i: -score_sums[i] / score_counts[i] for i in score_sums}
+    print(prototypicality_scores)
     
     ordering = sorted(prototypicality_scores, key=prototypicality_scores.get, reverse=True)
     return ordering
