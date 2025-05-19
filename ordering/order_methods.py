@@ -9,7 +9,7 @@ import re
 
 import matplotlib.pyplot as plt
 
-def forgetting_order(xs, ys, model, num_epochs=5, threshold=0.5):
+def forgetting_order(xs, ys, model, task_sampler=None, num_epochs=5, threshold=0.5):
     """
     Computes forgetting scores for each example.
 
@@ -26,6 +26,10 @@ def forgetting_order(xs, ys, model, num_epochs=5, threshold=0.5):
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
     B, T, D = xs.shape
+
+    task = task_sampler()
+    if ys is None:
+        ys = task.evaluate(xs)
 
     # History of correct predictions per example
     example_correct = defaultdict(list)
@@ -256,11 +260,8 @@ def get_order(data, method_name, **kwargs):
     for i in range(data.shape[0]):
         cur_batch = np.array(data[i])
 
-        if method_name in "proto":
+        if method_name in ["proto", "forget"]:
             order.append(order_fn(data, ys=kwargs.get("ys", None), model=kwargs.get("model", None), task_sampler=kwargs.get("task_sampler", None)))
-            continue
-        if method_name == "forget":
-            order.append(order_fn(data, ys=kwargs.get("ys", None), model=kwargs.get("model", None)))
             continue
 
         if method_name == "hier_max":
