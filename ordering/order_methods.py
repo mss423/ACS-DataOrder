@@ -38,6 +38,7 @@ def proto_order(xs, model=None, task_sampler=None, ys=None, **kwargs):
         for t in range(1, T):  # skip t=0 since it's usually used for training
             pred = model(xi.to(device), yi.to(device), inds=[t])
             # preds_all.append(pred.item())
+            print(pred)
             preds_all.append(pred.view(-1).detach().cpu().numpy()[0])
             labels_all.append(int(yi[0, t].item()))
             example_ids.append(i)
