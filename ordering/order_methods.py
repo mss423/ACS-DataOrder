@@ -37,23 +37,53 @@ def compute_prototypicality(xs, ys):
     Returns:
         A dictionary mapping example index to prototypicality score (higher = more central)
     """
+    N, T = xs.shape
     device = xs.device
-    unique_labels = torch.unique(ys)
-    
-    # Step 1: Compute centroids for each class
-    centroids = {}
-    for label in unique_labels:
-        mask = ys == label
-        class_embeddings = xs[mask]
-        centroids[label.item()] = class_embeddings.mean(dim=0)
+    model.to(device)
 
-    # Step 2: Compute distance to class centroid for each example
-    prototypicality_scores = {}
-    for i in range(xs.shape[0]):
-        label = ys[i].item()
-        centroid = centroids[label]
-        distance = torch.norm(xs[i] - centroid, p=2).item()
-        prototypicality_scores[i] = -distance  # negative = more central
+    preds_all = []
+    labels_all = []
+    ids_all = []
+
+    for i in range(N):
+        xi = xs[i].unsqueeze(0)  # shape (1, T)
+        yi = ys[i].unsqueeze(0)
+
+        preds, indices = model(xi, yi)  # shape (1, T), (T,)
+        pred_vals = preds[0]
+        label_vals = yi[0]
+        index_vals = indices
+
+        for t, p, y in zip(index_vals.tolist(), pred_vals.tolist(), label_vals.tolist()):
+            preds_all.append(p)
+            labels_all.append(int(y))
+            ids_all.append(i)
+
+    # Step 2: Compute class centroids
+    import numpy as np
+    preds_all = np.array(preds_all)
+    labels_all = np.array(labels_all)
+    ids_all = np.array(ids_all)
+
+    centroids = {}
+    for label in np.unique(labels_all):
+        centroids[label] = preds_all[labels_all == label].mean()
+
+    # Step 3: Compute distance to class centroid
+    score_sums = {}
+    score_counts = {}
+
+    for i, pred, label in zip(ids_all, preds_all, labels_all):
+        dist = abs(pred - centroids[label])
+        if i not in score_sums:
+            score_sums[i] = 0.0
+            score_counts[i] = 0
+        score_sums[i] += dist
+        score_counts[i] += 1
+
+    # Step 4: Convert to average negative distance (more central = higher score)
+    prototypicality_scores = {i: -score_sums[i] / score_counts[i] for i in score_sums}
+    
     ordering = sorted(prototypicality_scores, key=prototypicality_scores.get, reverse=True)
     return ordering
 
@@ -66,42 +96,32 @@ def compute_forgetting_scores(xs, ys, model, batch_size=32, num_epochs=5):
     Returns:
         dict mapping example index to forgetting score
     """
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model.to(device)
-    
-    n = ys.shape[0]
-    indices = torch.arange(n)
+    N, T = xs.shape
+    device = xs.device
     example_correct = defaultdict(list)
 
     for epoch in range(num_epochs):
-        print(f"Epoch {epoch+1}/{num_epochs}")
+        print(f"Epoch {epoch + 1}/{num_epochs}")
+        for i in range(N):
+            xi = xs[i].unsqueeze(0)  # shape (1, T)
+            yi = ys[i].unsqueeze(0)  # shape (1, T)
 
-        # Shuffle for each epoch
-        perm = torch.randperm(n)
-        xs_shuffled = {k: v[perm] for k, v in xs.items()}
-        ys_shuffled = ys[perm]
-        indices_shuffled = indices[perm]
+            preds, indices = model(xi, yi)  # preds: shape (1, T), indices: (T,)
 
-        # Mini-batch loop
-        for i in range(0, n, batch_size):
-            batch_slice = slice(i, i + batch_size)
-            batch_inputs = {k: v[batch_slice].to(device) for k, v in xs_shuffled.items()}
-            batch_labels = ys_shuffled[batch_slice].to(device)
-            batch_indices = indices_shuffled[batch_slice]
+            # For each prediction index, check correctness
+            pred_row = preds[0]  # shape (T,)
+            true_row = yi[0]     # shape (T,)
 
-            model.train()
-            outputs = model(**batch_inputs)
-            preds = torch.argmax(outputs.logits, dim=1)
-            correct = (preds == batch_labels).detach().cpu()
+            for t, p in zip(indices.tolist(), pred_row.tolist()):
+                is_correct = (round(p) == int(true_row[t]))  # round to 0/1 if binary
+                example_correct[i].append(is_correct)
 
-            for idx, is_correct in zip(batch_indices, correct):
-                example_correct[idx.item()].append(is_correct.item())
-
-    # Compute forgetting scores: count transitions from 1 → 0
+    # Count forgetting events: transitions from 1 → 0
     forgetting_scores = {}
     for idx, history in example_correct.items():
         forgets = sum((history[i] == 1 and history[i+1] == 0) for i in range(len(history)-1))
         forgetting_scores[idx] = forgets
+        
     ordering = sorted(forgetting_scores, key=forgetting_scores.get, reverse=True)
     return ordering
 
@@ -224,7 +244,7 @@ def get_order(data, method_name, **kwargs):
             order.append(order_fn(data, kwargs.get("ys", None), kwargs.get("model", None)))
             continue
         elif method_name == "proto":
-            order.append(order_fn(data, kwargs.get(ys,None)))
+            order.append(order_fn(data, kwargs.get('ys', None)))
             continue
 
         if method_name == "hier_max":
