@@ -9,6 +9,59 @@ import re
 
 import matplotlib.pyplot as plt
 
+def forgetting_order(xs, ys, model, num_epochs=5, threshold=0.5):
+    """
+    Computes forgetting scores for each example.
+
+    xs: Tensor (B, T, D)
+    ys: Tensor (B, T)
+    model: callable model with signature model(x, y, inds=[t]) → (pred, _)
+    num_epochs: Number of times to evaluate (with data reshuffling or stochasticity)
+    threshold: Prediction is correct if abs(pred - y) < threshold (default: 0.5 for binary)
+
+    Returns:
+        A dict mapping example index i → forgetting score (number of 1→0 flips)
+    """
+    from collections import defaultdict
+
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    B, T, D = xs.shape
+
+    # History of correct predictions per example
+    example_correct = defaultdict(list)
+
+    for epoch in range(num_epochs):
+        print(f"Epoch {epoch + 1}/{num_epochs}")
+        for i in range(B):
+            xi = xs[i].unsqueeze(0).to(device)
+            yi = ys[i].unsqueeze(0).to(device)
+
+            correct_count = 0
+            total = 0
+
+            for t in range(1, T):
+                pred, _ = model(xi, yi, inds=[t])
+                pred_val = pred.view(-1).item()
+                true_val = yi[0, t].item()
+
+                is_correct = abs(pred_val - true_val) < threshold
+                correct_count += is_correct
+                total += 1
+
+            # Use average correctness across time as a binary value
+            accuracy = correct_count / total
+            example_correct[i].append(int(accuracy >= 0.5))  # consider "correct" if >50% time steps correct
+
+    # Count forgetting events: 1 → 0 transitions
+    forgetting_scores = {}
+    for i, history in example_correct.items():
+        forgets = sum((history[j] == 1 and history[j+1] == 0) for j in range(len(history)-1))
+        forgetting_scores[i] = forgets
+
+    ordering = sorted(forgetting_scores, key=forgetting_scores.get, reverse=True)
+    return ordering
+
+
 def proto_order(xs, model=None, task_sampler=None, ys=None, **kwargs):
     """
     Computes prototypicality-based ordering using prediction distances from class centroids.
@@ -182,7 +235,8 @@ def get_order(data, method_name, **kwargs):
         "pseudo": max_cover_pseudo,
         "acs": acs_k_cover,
         "kmeans": kmeans_order,
-        "proto": proto_order
+        "proto": proto_order,
+        "forget": forgetting_order
     }
 
     if "max_cover" in method_name:
