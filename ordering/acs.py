@@ -169,7 +169,7 @@ def create_graph(data: np.ndarray, threshold: float, labels: np.ndarray = None) 
     """
     n = len(data)
     G = nx.Graph()
-    if labels is not None:
+    if labels is None:
         G.add_nodes_from(range(n))
         labels = range(n)
     else:
